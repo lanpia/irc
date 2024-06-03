@@ -4,7 +4,7 @@ GREEN       =   \033[0;32m
 INIT_ANSI   =   \033[0m     # 초기화
 
 # 실행 파일 이름
-EXECUTABLE = executable
+NAME = ircserv
 
 # 소스 파일 및 오브젝트 파일 찾기 및 정의
 SRC_DIR = .
@@ -24,11 +24,11 @@ CXXFLAGS = -g -Wall -Wextra -Werror -std=c++98 -I$(INCLUDE_DIR)
 .PHONY: all clean re
 
 # 'make all' 또는 'make' 규칙
-all: $(EXECUTABLE)
+all: $(NAME)
 	@echo "\n$(GREEN)$(BOLD)Build complete.$(INIT_ANSI)"
 
 # 실행 파일 빌드 규칙
-$(EXECUTABLE): $(OBJECTS)
+$(NAME): $(OBJECTS)
 	@echo "\n$(GREEN)Linking...$(INIT_ANSI)"
 	$(CXX) $(CXXFLAGS) -o $@ $^
 
@@ -46,7 +46,7 @@ clean:
 
 fclean:
 	@echo "\n$(GREEN)FCleaning...$(INIT_ANSI)"
-	rm -rf $(BUILD_DIR) $(EXECUTABLE)
+	rm -rf $(BUILD_DIR) $(NAME)
 	@echo "\n$(GREEN)$(BOLD)Cleaned.$(INIT_ANSI)"
 
 # 'make re' 규칙
