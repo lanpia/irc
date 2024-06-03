@@ -4,7 +4,7 @@ GREEN       =   \033[0;32m
 INIT_ANSI   =   \033[0m     # 초기화
 
 # 실행 파일 이름
-NAME = executable
+NAME = ircserv
 
 # 소스 파일 및 오브젝트 파일 찾기 및 정의
 SRC_DIR = .
