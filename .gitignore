@@ -1,0 +1,9 @@
+*.o
+*.d
+*.gch
+a.outDYSM
+a.out
+build
+ircserv
+output
+
