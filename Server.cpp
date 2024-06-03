@@ -104,7 +104,8 @@ void Server::acceptNewClient() {
 
     std::cout << "New client connected: " << new_socket << std::endl;
 }
-
+// _cmd로 사사용용할할수수있있게 정리하기 
+// NICK USER 설정후 나머지 사용할 수 있게 하기
 void Server::handleClientMessage(int client_fd) {
     char buffer[1024];
     int valread = read(client_fd, buffer, 1024);
@@ -117,8 +118,17 @@ void Server::handleClientMessage(int client_fd) {
     std::string message(buffer);
 
     std::cout << "Message from client " << client_fd << ": " << message << std::endl;
-
     // 메시지 처리 로직 추가
+    std::cout << "Make a account" << std::endl;
+    std::cout << "enter the 'NICK [nickname]' plz" << std::endl;
+    _clients[client_fd]->setNickname(message.substr(5));
+    std::cout << "enter the 'USER [username]' plz" << std::endl;
+    _clients[client_fd]->setUsername(message.substr(5));
+    std::cout << "enter the 'JOIN [channel]' plz(If Channel is not exist we make the Channel)" << std::endl;
+    std::string channelName = message.substr(5);
+    if (_channels[channelName] == NULL) {
+        _channels[channelName] = new Channel(channelName);
+    }
     if (message.find("NICK") == 0) {
         // NICK 명령 처리
         _clients[client_fd]->setNickname(message.substr(5));
@@ -195,7 +205,13 @@ void Server::handleClientMessage(int client_fd) {
     } else if (message.find("QUIT") == 0) {
         disconnectClient(client_fd);
     }
+    else if (msg.("HELP")) {
+        print cmd all;
+    }
 }
+
+기존 | 변경
+막막 | 이름 -> aa -> aa ->
 
 void Server::disconnectClient(int client_fd) {
     std::cout << "Client disconnected: " << client_fd << std::endl;
