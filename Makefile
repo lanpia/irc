@@ -7,7 +7,7 @@ INIT_ANSI   =   \033[0m     # 초기화
 NAME = ircserv
 
 # 소스 파일 및 오브젝트 파일 찾기 및 정의
-SRC_DIR = ./src
+SRC_DIR = ./source
 INCLUDE_DIR = ./include
 BUILD_DIR = build
 OBJ_DIR = $(BUILD_DIR)/objs

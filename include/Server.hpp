@@ -18,8 +18,8 @@ class Server {
 	Server(int port, const std::string& password);
 	~Server();
 
-	bool start();
 	void run();
+	void setupServer();
 
    private:
 	int _port;																	 // 서버가 청취할 포트 번호
@@ -30,14 +30,11 @@ class Server {
 	std::map<std::string, Channel*> _channels;									 // 채널 목록
 	std::map<std::string, void (Server::*)(int, const std::string&)> _commands;	 // 커맨드 매핑
 
-	bool setupServer();
 	void acceptNewClient();
 	void handleClientMessage(int client_fd);
 	void disconnectClient(int client_fd);
 	void sendToClient(int client_fd, const std::string& message);
 	void broadcastToChannel(const std::string& channel, const std::string& message, int except_fd = -1);
-	void registerCommands();
-	void processCommand(int client_fd, const std::string& command, const std::string& params);
 
 	// 명령어 처리 함수
 	void handleNick(int client_fd, const std::string& params);

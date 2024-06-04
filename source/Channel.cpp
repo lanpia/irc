@@ -10,30 +10,14 @@ Channel::~Channel() {
 }
 
 // Getter
-std::string Channel::getName() const {
-	return _name;
-}
-
-std::string Channel::getTopic() const {
-	return _topic;
-}
-
-std::string Channel::getMode() const {
-	return _mode;
-}
-
-std::vector<Client*> Channel::getClients() const {
-	return _clients;
-}
+std::string Channel::getName() const { return _name; }
+std::string Channel::getTopic() const { return _topic; }
+std::string Channel::getMode() const { return _mode; }
+std::vector<Client*> Channel::getClients() const { return _clients; }
 
 // Setter
-void Channel::setTopic(const std::string& topic) {
-	_topic = topic;
-}
-
-void Channel::setMode(const std::string& mode) {
-	_mode = mode;
-}
+void Channel::setTopic(const std::string& topic) { _topic = topic; }
+void Channel::setMode(const std::string& mode) { _mode = mode; }
 
 // 클라이언트 관리
 void Channel::addClient(Client* client) {
