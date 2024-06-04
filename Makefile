@@ -7,8 +7,8 @@ INIT_ANSI   =   \033[0m     # 초기화
 NAME = ircserv
 
 # 소스 파일 및 오브젝트 파일 찾기 및 정의
-SRC_DIR = .
-INCLUDE_DIR = .
+SRC_DIR = ./source
+INCLUDE_DIR = ./include
 BUILD_DIR = build
 OBJ_DIR = $(BUILD_DIR)/objs
 DEP_DIR = $(BUILD_DIR)/deps
@@ -18,7 +18,7 @@ DEPENDS = $(OBJECTS:$(OBJ_DIR)/%.o=$(DEP_DIR)/%.d)
 
 # 컴파일러 설정
 CXX = c++
-CXXFLAGS = -g -Wall -Wextra -Werror -std=c++98 -I$(INCLUDE_DIR)
+CXXFLAGS = -g -std=c++98 -Wall -Wextra -Werror -I$(INCLUDE_DIR) -fsanitize=address
 
 # 기본 타겟 설정
 .PHONY: all clean re
