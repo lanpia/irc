@@ -214,7 +214,12 @@ void Server::acceptNewClient() {
 void Server::handleClientMessage(int client_fd) {
 	char buffer[1024];
 	int valread = read(client_fd, buffer, 1024);
-	if (valread <= 0) {
+	if (valread >= 1024) {
+		std::memset(buffer, 0, 1024);
+		sendToClient(client_fd, "Message too long\n");
+		return;
+	}
+	if (valread <= 0 ) {
 		disconnectClient(client_fd);
 		return;
 	}
@@ -224,7 +229,6 @@ void Server::handleClientMessage(int client_fd) {
 
 	// 뒤 공백 및 개행 문자 제거
 	message.erase(message.find_last_not_of(" \n\r\t") + 1);
-
 	std::istringstream iss(message);
 	std::string command;
 	iss >> command;
