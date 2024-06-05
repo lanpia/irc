@@ -209,7 +209,9 @@ if (!isRegistered(client_fd)) {
 - **채널 존재하지 않음 (ERR_NOSUCHCHANNEL)**
   클라이언트가 존재하지 않는 채널에 접근하려 할 때 반환합니다.
   ```plaintext
-  :<server> 403 <channel> :No such channel
+  :
+
+<server> 403 <channel> :No such channel
   ```
 
 - **이미 채널에 존재하는 경우 (ERR_USERONCHANNEL)**
@@ -257,3 +259,22 @@ QUIT :<message>
 서버는 메모리 누수 없이 안정적으로 실행되어야 하며, 클라이언트의 연결 해제 시 자원을 적절히 해제해야 합니다.
 
 이와 같이 RFC 1459의 규정을 반영하여 IRC 서버 구현을 위한 규칙과 예외 처리를 보완했습니다. 이를 기반으로 안정적이고 표준에 부합하는 IRC 서버를 구현할 수 있습니다.
+
+## 6. 메시지 길이 제한
+- **최대 메시지 길이**: 512자 (512 bytes)
+- **CRLF 포함**: 메시지는 CRLF(CR: \r, LF: \n)로 끝나야 하며, 이 두 문자도 길이 제한에 포함됩니다.
+
+### 6.1 메시지 길이 검증
+클라이언트가 서버로 전송하는 모든 메시지는 최대 512자까지 허용됩니다. 메시지의 끝에 포함되는 CRLF도 이 길이 제한에 포함됩니다. 메시지가 이 제한을 초과할 경우, 서버는 메시지를 거부하고 적절한 오류 메시지를 반환해야 합니다.
+
+```cpp
+if (message.length() > 512) {
+    send_message(client_fd, ":irc.example.com 417 " + nickname + " :Input line was too long");
+}
+```
+
+### 6.2 오류 코드 (ERR_INPUTTOOLONG)
+메시지 길이가 512자를 초과할 경우 반환하는 오류 코드입니다.
+```plaintext
+:<server> 417 <nickname> :Input line was too long
+```
