@@ -1,4 +1,4 @@
-# IRC 서버 구현을 위한 규칙
+# IRC 서버 구현을 위한 규칙 및 고려사항
 
 ## 1. 필수 메시지
 
@@ -66,6 +66,44 @@
 :<server> 482 <channel> :You're not channel operator
 ```
 
+### 2.6 메시지 형식 오류 (ERR_UNKNOWNCOMMAND)
+클라이언트가 잘못된 형식의 명령어를 보낼 때 반환합니다.
+```plaintext
+:<server> 421 <command> :Unknown command
+```
+
+### 2.7 채널 관련 오류
+- **채널 존재하지 않음 (ERR_NOSUCHCHANNEL)**:
+  클라이언트가 존재하지 않는 채널에 접근하려 할 때 반환합니다.
+  ```plaintext
+  :<server> 403 <channel> :No such channel
+  ```
+
+- **이미 채널에 존재하는 경우 (ERR_USERONCHANNEL)**:
+  클라이언트가 이미 참여한 채널에 다시 참여하려 할 때 반환합니다.
+  ```plaintext
+  :<server> 443 <nickname> <channel> :is already on channel
+  ```
+
+### 2.8 잘못된 채널 모드 설정 (ERR_UNKNOWNMODE)
+클라이언트가 존재하지 않는 채널 모드를 설정하려 할 때 반환합니다.
+```plaintext
+:<server> 472 <mode char> :is unknown mode char to me
+```
+
+### 2.9 잘못된 비밀번호 (ERR_PASSWDMISMATCH)
+클라이언트가 잘못된 비밀번호를 사용하여 서버에 접속하려 할 때 반환합니다.
+```plaintext
+:<server> 464 <nickname> :Password incorrect
+```
+
+### 2.10 MOTD 관련 오류
+- **MOTD 파일이 없는 경우 (ERR_NOMOTD)**:
+  MOTD 파일이 없을 때 반환합니다.
+  ```plaintext
+  :<server> 422 <nickname> :MOTD File is missing
+  ```
+
 ## 3. 예외 처리
 
 ### 3.1 유효하지 않은 닉네임 사용
@@ -85,7 +123,7 @@ if (isNicknameInUse(nickname)) {
 ```
 
 ### 3.3 닉네임 또는 사용자 정보 부족
-클라이언트가 `NICK` 또는 `USER` 명령어를 사용하지 않고 `JOIN` 명령어를 실행하려 할 때 `ERR_NONICKNAMEGIVEN` 또는 `ERR_NOTREGISTERED` 메시지를 반환합니다.
+클라이언트가 `NICK` 또는 `USER` 명령어를 사용하지 않고 `JOIN`, `PRIVMSG`, `PART` 등의 명령어를 실행하려 할 때 `ERR_NONICKNAMEGIVEN` 또는 `ERR_NOTREGISTERED` 메시지를 반환합니다.
 ```cpp
 if (!hasGivenNickOrUserInfo(client_fd)) {
     send_message(client_fd, ":irc.example.com 451 " + nickname + " :You have not registered");
@@ -127,6 +165,23 @@ if (bytes_received == -1) {
 }
 ```
 
+### 3.8 비밀번호 인증 실패
+클라이언트가 잘못된 비밀번호로 서버에 연결하려 할 때 연결을 거부합니다.
+```cpp
+if (!isValidPassword(provided_password)) {
+    send_message(client_fd, ":irc.example.com 464 " + nickname + " :Password incorrect");
+    close(client_fd);
+}
+```
+
+### 3.9 클라이언트 명령어 오버플로우
+클라이언트가 너무 많은 명령어를 짧은 시간에 보낼 때 이를 감지하고 제한합니다.
+```cpp
+if (isCommandOverflow(client_fd)) {
+    send_message(client_fd, ":irc.example.com 439 " + nickname + " :Too many commands; slow down");
+}
+```
+
 ## 4. 추가적인 규칙 및 예외 처리 (RFC 1459 참고)
 
 ### 4.1 PING 및 PONG
@@ -154,22 +209,30 @@ if (!isRegistered(client_fd)) {
 - **채널 존재하지 않음 (ERR_NOSUCHCHANNEL)**
   클라이언트가 존재하지 않는 채널에 접근하려 할 때 반환합니다.
   ```plaintext
-  :<server> 403 <channel> :No such channel
+  :
+
+<server> 403 <channel> :No such channel
   ```
 
-- **채널 운영자 권한 없음 (ERR_CHANOPRIVSNEEDED)**
-  클라이언트가 채널 운영자 권한이 필요한 명령어를 실행하려 할 때 반환합니다.
+- **이미 채널에 존재하는 경우 (ERR_USERONCHANNEL)**
+  클라이언트가 이미 참여한 채널에 다시 참여하려 할 때 반환합니다.
   ```plaintext
-  :<server> 482 <channel> :You're not channel operator
+  :<server> 443 <nickname> <channel> :is already on channel
   ```
 
-### 4.5 서버의 공지 메시지 (NOTICE)
+### 4.5 잘못된 채널 모드 설정 (ERR_UNKNOWNMODE)
+클라이언트가 존재하지 않는 채널 모드를 설정하려 할 때 반환합니다.
+```plaintext
+:<server> 472 <mode char> :is unknown mode char to me
+```
+
+### 4.6 서버의 공지 메시지 (NOTICE)
 서버는 중요한 공지사항을 클라이언트에게 `NOTICE` 메시지로 전달할 수 있습니다.
 ```plaintext
 :<server> NOTICE <nickname> :<message>
 ```
 
-### 4.6 QUIT 메시지
+### 4.7 QUIT 메시지
 클라이언트가 연결을 종료할 때 `QUIT` 메시지를 보내야 합니다.
 ```plaintext
 QUIT :<message>
@@ -195,43 +258,4 @@ QUIT :<message>
 ### 5.6 리소스 관리
 서버는 메모리 누수 없이 안정적으로 실행되어야 하며, 클라이언트의 연결 해제 시 자원을 적절히 해제해야 합니다.
 
-graph TD
-    A[서버 시작] --> B[소켓 생성]
-    B --> C[서버 주소 구조체 설정]
-    C --> D[소켓 바인딩]
-    D --> E[연결 대기 (listen)]
-    E --> F[클라이언트 연결 수락 (accept)]
-    
-    F --> G[클라이언트 연결 처리]
-    
-    subgraph "클라이언트 연결 처리"
-        G --> H[클라이언트 인증]
-        H --> I{인증 성공?}
-        I -->|예| J[명령어 수신 대기]
-        I -->|아니오| K[연결 종료]
-        
-        J --> L{명령어 유형 확인}
-        L -->|NICK| M[닉네임 설정]
-        L -->|USER| N[사용자 정보 설정]
-        L -->|JOIN| O[채널 참가]
-        L -->|PRIVMSG| P[개인 메시지 처리]
-        L -->|PART| Q[채널 떠남]
-        L -->|QUIT| R[연결 종료]
-        L -->|기타| S[기타 명령어 처리]
-
-        M --> T[응답 메시지 전송]
-        N --> T
-        O --> T
-        P --> T
-        Q --> T
-        S --> T
-
-        T --> J
-        R --> K
-
-        K --> U[클라이언트 목록에서 제거]
-        U --> V[자원 해제]
-        V --> E
-    end
-
-    G --> K
+이와 같이 RFC 1459의 규정을 반영하여 IRC 서버 구현을 위한 규칙과 예외 처리를 보완했습니다. 이를 기반으로 안정적이고 표준에 부합하는 IRC 서버를 구현할 수 있습니다.
