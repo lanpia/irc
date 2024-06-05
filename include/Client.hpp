@@ -5,6 +5,13 @@
 
 #include <set>
 #include <string>
+#include <map>
+
+#include <iostream>
+#include <sstream>
+
+#include <unistd.h>
+#include <fcntl.h>
 
 class Client {
    public:
@@ -25,6 +32,7 @@ class Client {
 	// 채널 관련
 	void joinChannel(const std::string& channel);
 	void leaveChannel(const std::string& channel);
+	std::map<std::string, std::string> getBuffer(int fd);
 
    private:
 	int _fd;						  // 클라이언트 소켓 파일 디스크립터

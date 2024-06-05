@@ -148,7 +148,7 @@ void Server::setupServer() {
 }
 
 void Server::run() {
-	/* struct pollfd fds[1024]에 대한 설명
+	/* struct pollfd fds[512]에 대한 설명
 	 * poll() 함수에 사용할 파일 디스크립터 목록입니다.
 	 *
 	 * struct pollfd {
@@ -157,7 +157,7 @@ void Server::run() {
 	 *	short revents;	// 발생한 이벤트 종류
 	 * };
 	 */
-	struct pollfd fds[1024];
+	struct pollfd fds[255];
 	int nfds = 1;
 	fds[0].fd = _server_fd;
 	fds[0].events = POLLIN;
@@ -210,7 +210,6 @@ void Server::acceptNewClient() {
 
 	std::cout << "New client connected: " << new_socket << std::endl;
 }
-
 void Server::handleClientMessage(int client_fd) {
     char buffer[513];
     int valread = read(client_fd, buffer, 512);
@@ -255,6 +254,18 @@ void Server::handleClientMessage(int client_fd) {
 		sendToClient(client_fd, "Unknown command: " + command + "\r\n");
 	}
 }
+
+// 		std::map<std::string, void (Server::*)(int, const std::string&)>::iterator it = _commands.find(command);
+// 		if (it != _commands.end()) {
+// 			(this->*(it->second))(client_fd, params);
+// 		} else {
+// 			sendToClient(client_fd, "Unknown command: " + command + "\r\n");
+// 		}
+// 	}
+// 	else {
+// 		sendToClient(client_fd, "Message too long\r\n");
+// 	}
+// }
 
 void Server::disconnectClient(int client_fd) {
 	std::cout << "Client disconnected: " << client_fd << std::endl;
