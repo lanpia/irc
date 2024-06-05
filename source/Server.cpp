@@ -210,46 +210,50 @@ void Server::acceptNewClient() {
 
 	std::cout << "New client connected: " << new_socket << std::endl;
 }
-
 void Server::handleClientMessage(int client_fd) {
-	std::map<std::string, std::string> buffer = _clients[client_fd]->getBuffer(client_fd);
-	if (buffer.empty()) {
-		disconnectClient(client_fd);
-	} else {
-		std::istringstream iss(buffer["message"]);
-		std::string command;
-		iss >> command;
-		std::string params;
-		getline(iss, params);
-		params.erase(0, params.find_first_not_of(" "));
+    char buffer[513];
+    int valread = read(client_fd, buffer, 512);
+    if (valread <= 0) {
+        disconnectClient(client_fd);
+        return;
+    }
+	
+    buffer[valread] = '\0';
+    std::string &messageBuffer = _clients[client_fd]->getMessageBuffer();
+    messageBuffer.append(buffer, valread);
 
-		std::map<std::string, void (Server::*)(int, const std::string&)>::iterator it = _commands.find(command);
-		if (it != _commands.end()) {
-			(this->*(it->second))(client_fd, params);
-		}
+    size_t pos;
+	if ((pos = messageBuffer.find("\r\n")) == std::string::npos) {	// 메시지의 끝을 \r\n으로 인식
+		return;
+	}
+
+    // 메시지가 512 바이트를 초과하는 경우 처리하지 않음
+    if (messageBuffer.size() > 512) {
+        sendToClient(client_fd, "Message too long\n");
+        messageBuffer.clear();
+        return;
+    }
+
+	std::string message = messageBuffer.substr(0, pos);
+	messageBuffer.erase(0, pos + 2);  // 버퍼에서 메시지를 제거 (\r\n 포함)
+
+	// 뒤 공백 및 개행 문자 제거
+	message.erase(message.find_last_not_of(" \n\r\t") + 1);
+
+	std::istringstream iss(message);
+	std::string command;
+	iss >> command;
+	std::string params;
+	getline(iss, params);
+	// params.erase(0, params.find_first_not_of(" "));	 // 앞 공백 제거
+
+	std::map<std::string, void (Server::*)(int, const std::string&)>::iterator it = _commands.find(command);
+	if (it != _commands.end()) {
+		(this->*(it->second))(client_fd, params);
+	} else {
+		sendToClient(client_fd, "Unknown command: " + command + "\r\n");
 	}
 }
-
-
-// void Server::handleClientMessage(int client_fd) {
-// 	char buffer[512];
-// 	int valread = read(client_fd, buffer, 512);
-// 	if (valread <= 0 ) {
-// 		disconnectClient(client_fd);
-// 		return;
-// 	}
-// 	else if (valread < 512) {
-// 		buffer[valread] = '\0';
-// 		std::string message(buffer);
-
-// 		// 뒤 공백 및 개행 문자 제거
-// 		message.erase(message.find_last_not_of(" \n\r\t") + 1);
-// 		std::istringstream iss(message);
-// 		std::string command;
-// 		iss >> command;
-// 		std::string params;
-// 		getline(iss, params);
-// 		params.erase(0, params.find_first_not_of(" "));	 // 앞 공백 제거
 
 // 		std::map<std::string, void (Server::*)(int, const std::string&)>::iterator it = _commands.find(command);
 // 		if (it != _commands.end()) {

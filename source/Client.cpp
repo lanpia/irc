@@ -1,6 +1,6 @@
 #include "Client.hpp"
 
-Client::Client(int fd) : _fd(fd) {
+Client::Client(int fd) : _fd(fd), _messageBuffer("") {
 }
 
 Client::~Client() {
@@ -17,6 +17,10 @@ std::string Client::getNickname() const {
 
 std::string Client::getUsername() const {
 	return _username;
+}
+
+std::string& Client::getMessageBuffer() {
+	return _messageBuffer;
 }
 
 bool Client::isInChannel(const std::string& channel) const {

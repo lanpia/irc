@@ -5,11 +5,12 @@
 		"name": "Debug",
 		"type": "lldb",
 		"request": "launch",
-		"program": "${fileDirname}/output",
+		"program": "${workspaceFolder}/ircserv",
 		"args": [
-		  "${input:executableArgs}"
+			"4000",
+			"1"
 		],
-		"cwd": "${fileDirname}",
+		"cwd": "${workspaceFolder}",
 		"preLaunchTask": "build",
 		"postDebugTask": "clean"
 	  }
