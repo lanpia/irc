@@ -126,3 +126,72 @@ if (bytes_received == -1) {
     // 클라이언트 목록에서 제거
 }
 ```
+
+## 4. 추가적인 규칙 및 예외 처리 (RFC 1459 참고)
+
+### 4.1 PING 및 PONG
+서버는 클라이언트의 연결 상태를 확인하기 위해 `PING` 메시지를 보내야 합니다. 클라이언트는 `PONG` 메시지로 응답해야 합니다.
+```plaintext
+PING :<server>
+PONG :<server>
+```
+
+### 4.2 서버와 클라이언트 간의 동기화
+서버는 클라이언트가 `NICK` 및 `USER` 명령어를 보내고 성공적으로 등록되었음을 확인한 후에만 다른 명령어를 허용해야 합니다.
+```cpp
+if (!isRegistered(client_fd)) {
+    send_message(client_fd, ":irc.example.com 451 " + nickname + " :You have not registered");
+}
+```
+
+### 4.3 유효하지 않은 명령어 (ERR_UNKNOWNCOMMAND)
+클라이언트가 지원하지 않는 명령어를 보낼 때 `ERR_UNKNOWNCOMMAND` 메시지를 반환합니다.
+```plaintext
+:<server> 421 <command> :Unknown command
+```
+
+### 4.4 채널 관련 오류
+- **채널 존재하지 않음 (ERR_NOSUCHCHANNEL)**
+  클라이언트가 존재하지 않는 채널에 접근하려 할 때 반환합니다.
+  ```plaintext
+  :<server> 403 <channel> :No such channel
+  ```
+
+- **채널 운영자 권한 없음 (ERR_CHANOPRIVSNEEDED)**
+  클라이언트가 채널 운영자 권한이 필요한 명령어를 실행하려 할 때 반환합니다.
+  ```plaintext
+  :<server> 482 <channel> :You're not channel operator
+  ```
+
+### 4.5 서버의 공지 메시지 (NOTICE)
+서버는 중요한 공지사항을 클라이언트에게 `NOTICE` 메시지로 전달할 수 있습니다.
+```plaintext
+:<server> NOTICE <nickname> :<message>
+```
+
+### 4.6 QUIT 메시지
+클라이언트가 연결을 종료할 때 `QUIT` 메시지를 보내야 합니다.
+```plaintext
+QUIT :<message>
+```
+
+## 5. 서버 구현 시 고려해야 할 추가 사항
+
+### 5.1 멀티 클라이언트 지원
+서버는 동시에 여러 클라이언트를 처리할 수 있어야 합니다. 이를 위해 비차단(non-blocking) 소켓과 `poll()` 또는 `select()`와 같은 다중화(multiplexing) 기법을 사용해야 합니다.
+
+### 5.2 인증 및 보안
+서버는 클라이언트가 연결할 때 비밀번호를 요구하고 검증해야 합니다. 이는 서버와 클라이언트 간의 보안을 강화하는 데 필요합니다.
+
+### 5.3 명령어 처리
+서버는 IRC 프로토콜의 기본 명령어(`NICK`, `USER`, `JOIN`, `PRIVMSG`, `PART`, `QUIT` 등)를 처리할 수 있어야 합니다. 추가적으로 채널 운영자 명령어(`KICK`, `INVITE`, `TOPIC`, `MODE` 등)도 구현해야 합니다.
+
+### 5.4 메시지 브로드캐스팅
+클라이언트가 채널에 보낸 메시지는 해당 채널의 모든 클라이언트에게 브로드캐스트 되어야 합니다.
+
+### 5.5 로그 관리
+서버는 클라이언트의 활동과 오류를 기록(log)하여 유지보수와 디버깅에 도움을 줄 수 있어야 합니다.
+
+### 5.6 리소스 관리
+서버는 메모리 누수 없이 안정적으로 실행되어야 하며, 클라이언트의 연결 해제 시 자원을 적절히 해제해야 합니다.
+```
