@@ -209,9 +209,7 @@ if (!isRegistered(client_fd)) {
 - **채널 존재하지 않음 (ERR_NOSUCHCHANNEL)**
   클라이언트가 존재하지 않는 채널에 접근하려 할 때 반환합니다.
   ```plaintext
-  :
-
-<server> 403 <channel> :No such channel
+  :<server> 403 <channel> :No such channel
   ```
 
 - **이미 채널에 존재하는 경우 (ERR_USERONCHANNEL)**
