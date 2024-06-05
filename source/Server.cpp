@@ -148,7 +148,7 @@ void Server::setupServer() {
 }
 
 void Server::run() {
-	/* struct pollfd fds[1024]에 대한 설명
+	/* struct pollfd fds[512]에 대한 설명
 	 * poll() 함수에 사용할 파일 디스크립터 목록입니다.
 	 *
 	 * struct pollfd {
@@ -157,7 +157,7 @@ void Server::run() {
 	 *	short revents;	// 발생한 이벤트 종류
 	 * };
 	 */
-	struct pollfd fds[1024];
+	struct pollfd fds[255];
 	int nfds = 1;
 	fds[0].fd = _server_fd;
 	fds[0].events = POLLIN;
@@ -212,37 +212,56 @@ void Server::acceptNewClient() {
 }
 
 void Server::handleClientMessage(int client_fd) {
-	char buffer[1024];
-	int valread = read(client_fd, buffer, 1024);
-	if (valread >= 1024) {
-		std::memset(buffer, 0, 1024);
-		sendToClient(client_fd, "Message too long\n");
-		return;
-	}
-	if (valread <= 0 ) {
+	std::map<std::string, std::string> buffer = _clients[client_fd]->getBuffer(client_fd);
+	if (buffer.empty()) {
 		disconnectClient(client_fd);
-		return;
-	}
-
-	buffer[valread] = '\0';
-	std::string message(buffer);
-
-	// 뒤 공백 및 개행 문자 제거
-	message.erase(message.find_last_not_of(" \n\r\t") + 1);
-	std::istringstream iss(message);
-	std::string command;
-	iss >> command;
-	std::string params;
-	getline(iss, params);
-	params.erase(0, params.find_first_not_of(" "));	 // 앞 공백 제거
-
-	std::map<std::string, void (Server::*)(int, const std::string&)>::iterator it = _commands.find(command);
-	if (it != _commands.end()) {
-		(this->*(it->second))(client_fd, params);
 	} else {
-		sendToClient(client_fd, "Unknown command: " + command + "\r\n");
+		std::istringstream iss(buffer["message"]);
+		std::string command;
+		iss >> command;
+		std::string params;
+		getline(iss, params);
+		params.erase(0, params.find_first_not_of(" "));
+
+		std::map<std::string, void (Server::*)(int, const std::string&)>::iterator it = _commands.find(command);
+		if (it != _commands.end()) {
+			(this->*(it->second))(client_fd, params);
+		}
 	}
 }
+
+
+// void Server::handleClientMessage(int client_fd) {
+// 	char buffer[512];
+// 	int valread = read(client_fd, buffer, 512);
+// 	if (valread <= 0 ) {
+// 		disconnectClient(client_fd);
+// 		return;
+// 	}
+// 	else if (valread < 512) {
+// 		buffer[valread] = '\0';
+// 		std::string message(buffer);
+
+// 		// 뒤 공백 및 개행 문자 제거
+// 		message.erase(message.find_last_not_of(" \n\r\t") + 1);
+// 		std::istringstream iss(message);
+// 		std::string command;
+// 		iss >> command;
+// 		std::string params;
+// 		getline(iss, params);
+// 		params.erase(0, params.find_first_not_of(" "));	 // 앞 공백 제거
+
+// 		std::map<std::string, void (Server::*)(int, const std::string&)>::iterator it = _commands.find(command);
+// 		if (it != _commands.end()) {
+// 			(this->*(it->second))(client_fd, params);
+// 		} else {
+// 			sendToClient(client_fd, "Unknown command: " + command + "\r\n");
+// 		}
+// 	}
+// 	else {
+// 		sendToClient(client_fd, "Message too long\r\n");
+// 	}
+// }
 
 void Server::disconnectClient(int client_fd) {
 	std::cout << "Client disconnected: " << client_fd << std::endl;
