@@ -30,7 +30,7 @@ class Channel {
 	bool isOperator(Client* client) const;
 	void addOperator(Client* client);
 	void removeOperator(Client* client);
-	void kickClient(const std::string& nickname);
+	bool kickClient(const std::string& nickname);
 	void inviteClient(const std::string& nickname);
 
    private:

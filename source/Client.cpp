@@ -81,3 +81,25 @@ std::map<std::string, std::string> Client::getBuffer(int fd) {
 	}
 	return buffer;
 }
+
+bool Client::isValidNickname(const std::string& nickname) const{
+    // Check length
+    if (nickname.length() > 9) // 9자를 초과하는지 확인
+        return false;
+
+    // Check first character
+    if (!isalpha(nickname[0])) // 첫 글자가 알파벳인지 확인
+        return false;
+
+    // Check for invalid characters
+    for (size_t i = 0; i < nickname.length(); ++i) {
+        if (!isalnum(nickname[i]) && nickname[i] != '_') // 알파벳, 숫자, 언더스코어(_)만 허용
+            return false;
+    }
+
+    // Check reserved nicknames
+    if (nickname == "root" || nickname == "admin") // 예약된 닉네임인지 확인
+        return false;
+
+    return true;
+}

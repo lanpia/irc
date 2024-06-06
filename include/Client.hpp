@@ -34,6 +34,7 @@ class Client {
 	void leaveChannel(const std::string& channel);
 	std::map<std::string, std::string> getBuffer(int fd);
 
+	bool isValidNickname(const std::string& nickname) const;
    private:
 	int _fd;						  // 클라이언트 소켓 파일 디스크립터
 	std::string _nickname;			  // 클라이언트 닉네임
