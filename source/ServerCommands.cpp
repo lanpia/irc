@@ -2,12 +2,29 @@
 
 #include "Server.hpp"
 
+static bool isAlreadyUsed(const std::map<int, Client*>& clients, std::string (Client::*func)() const, const std::string& params) {
+    for (std::map<int, Client*>::const_iterator it = clients.begin(); it != clients.end(); ++it) {
+        if ((it->second->*func)() == params) {
+            return true;
+        }
+    }
+    return false;
+}
+
 void Server::handleNick(int client_fd, const std::string& params) {
+	if (isAlreadyUsed(_clients, &Client::getNickname, params)) {
+		sendToClient(client_fd, "Nickname already in use\r\n");
+		return;
+	}
 	_clients[client_fd]->setNickname(params);
 	sendToClient(client_fd, "NICK " + _clients[client_fd]->getNickname() + "\r\n");
 }
 
 void Server::handleUser(int client_fd, const std::string& params) {
+	if (isAlreadyUsed(_clients, &Client::getUsername, params)) {
+		sendToClient(client_fd, "Username already in use\r\n");
+		return;
+	}
 	_clients[client_fd]->setUsername(params);
 	sendToClient(client_fd, "USER " + _clients[client_fd]->getUsername() + "\r\n");
 }
@@ -16,11 +33,15 @@ void Server::handleJoin(int client_fd, const std::string& params) {
 	std::string channelName = params;
 	if (_channels.find(channelName) == _channels.end()) {
 		_channels[channelName] = new Channel(channelName);
+		broadcastToChannel(channelName, "Channel created: " + channelName + "\r\n");
+		broadcastToChannel(channelName, "you have to Setting TOPIC\r\n");
 	}
 	_channels[channelName]->addClient(_clients[client_fd]);
 	_clients[client_fd]->joinChannel(channelName);
 	sendToClient(client_fd, "JOIN " + channelName + "\r\n");
 	broadcastToChannel(channelName, _clients[client_fd]->getNickname() + " has joined the channel\r\n", client_fd);
+	if (_channels[channelName]->getTopic().empty() == false)
+		broadcastToChannel(channelName, "TOPIC " + channelName + " :" + _channels[channelName]->getTopic() + "\r\n");
 }
 
 void Server::handlePart(int client_fd, const std::string& params) {
@@ -38,6 +59,10 @@ void Server::handlePrivmsg(int client_fd, const std::string& params) {
 	std::string target = params.substr(0, pos);
 	std::string msg = params.substr(pos + 1);
 	if (target[0] == '#') {
+		// if (target == _channels.find(target)->first) {
+		// 	sendToClient(client_fd, "Cannot send message to default channel\r\n");
+		// 	return;
+		// }
 		// 채널 메시지
 		broadcastToChannel(target, "PRIVMSG " + target + " :" + _clients[client_fd]->getNickname() + ": " + msg + "\r\n", client_fd);
 	} else {
