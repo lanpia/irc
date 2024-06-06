@@ -18,6 +18,7 @@ class Channel {
 	std::string getName() const;
 	std::string getTopic() const;
 	std::string getMode() const;
+	unsigned int getClient() const;
 	bool isInviteonly() const;
 	std::string getPasswd() const;
 	unsigned int getLimit() const;
@@ -40,6 +41,8 @@ class Channel {
 	bool isClientInChannel(Client* client) const;
 	void broadcast(const std::string& message, int except_fd = -1);
 
+	void Channel::settingChannel(Client *Client, bool inviteFlag, const std::string& key, unsigned int limit, std::string topic);
+	void Channel::ChangeMode(Client *client, const std::string& mode);
    private:
 	std::string _name;						// 채널 이름
 	std::string _topic;						// 채널 주제

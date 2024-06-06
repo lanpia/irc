@@ -73,3 +73,53 @@ void Channel::broadcast(const std::string& message, int except_fd) {
 		}
 	}
 }
+
+void Channel::settingChannel(Client *client, bool inviteFlag, const std::string& key, unsigned int limit, std::string topic) {
+	addOperator(client);
+	setInviteonly(inviteFlag);
+	setPasswd(key);
+	setLimit(limit);
+	setTopic(topic);
+}
+
+void Channel::ChangeMode(Client *client, const std::string& mode) {
+	if (mode[0] == '+') {
+		for (size_t i = 1; i < mode.size(); i++) {
+			switch (mode[i]) {
+				case 'i':
+					setInviteonly(true);
+					break;
+				case 'k':
+					setPasswd(mode.substr(i + 1));
+					break;
+				case 'l':
+					setLimit(std::stoi(mode.substr(i + 1)));
+					break;
+				case 't':
+					setTopic(mode.substr(i + 1));
+					break;
+				default:
+					break;
+			}
+		}
+	} else if (mode[0] == '-') {
+		for (size_t i = 1; i < mode.size(); i++) {
+			switch (mode[i]) {
+				case 'i':
+					setInviteonly(false);
+					break;
+				case 'k':
+					setPasswd("");
+					break;
+				case 'l':
+					setLimit(0);
+					break;
+				case 't':
+					setTopic("");
+					break;
+				default:
+					break;
+			}
+		}
+	}
+}

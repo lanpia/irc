@@ -44,7 +44,8 @@ void Server::handleJoin(int client_fd, const std::string& params) {
 	if (_channels.find(channelName) == _channels.end()) {
 		_channels[channelName] = new Channel(channelName);
 		_channels[channelName]->broadcast("Channel created: " + channelName + "\r\n");
-		_channels[channelName]->addOperator(_clients[client_fd]);
+		// _channels[channelName]->addOperator(_clients[client_fd]);
+		_channels[channelName]->settingChannel(_clients[client_fd], false, "", 0, "");
 		_clients[client_fd]->sendMessage("Now youer Channel operator\r\n");
 		_channels[channelName]->broadcast("you have to Setting TOPIC\r\n");
 	}
@@ -146,12 +147,6 @@ void Server::handleMode(int client_fd, const std::string& params) {
 		_channels[channelName]->broadcast("MODE " + channelName + " " + mode + "\r\n");
 	}
 }
-
-// limit key
-// 유저수 제한
-//토픽
-//초대
-//권한
 
 void Server::handleQuit(int client_fd, const std::string& params) {
 	(void)params;
