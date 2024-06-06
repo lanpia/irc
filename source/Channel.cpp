@@ -11,10 +11,17 @@ Channel::~Channel() {
 std::string Channel::getName() const { return _name; }
 std::string Channel::getTopic() const { return _topic; }
 std::string Channel::getMode() const { return _mode; }
+bool Channel::isInviteonly() const { return Inviteonly; }
+std::string Channel::getPasswd() const { return passwd; }
+unsigned int Channel::getLimit() const { return limit; }
 
 // Setter
 void Channel::setTopic(const std::string& topic) { _topic = topic; }
 void Channel::setMode(const std::string& mode) { _mode = mode; }
+void Channel::setInviteonly(bool isInviteonly) { Inviteonly = isInviteonly; }
+void Channel::setPasswd(const std::string& key) { passwd = key; }
+void Channel::setLimit(unsigned int limit) { limit = limit; }
+
 
 // 클라이언트 관리
 void Channel::addClient(Client* client) {

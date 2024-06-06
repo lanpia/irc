@@ -147,6 +147,12 @@ void Server::handleMode(int client_fd, const std::string& params) {
 	}
 }
 
+// limit key
+// 유저수 제한
+//토픽
+//초대
+//권한
+
 void Server::handleQuit(int client_fd, const std::string& params) {
 	(void)params;
 	disconnectClient(client_fd);

@@ -18,11 +18,16 @@ class Channel {
 	std::string getName() const;
 	std::string getTopic() const;
 	std::string getMode() const;
-	bool isClientInChannel(Client* client) const;
+	bool isInviteonly() const;
+	std::string getPasswd() const;
+	unsigned int getLimit() const;
 
 	// Setter
 	void setTopic(const std::string& topic);
 	void setMode(const std::string& mode);
+	void setInviteonly(bool isInviteonly);
+	void setPasswd(const std::string& key);
+	void setLimit(unsigned int limit);
 
 	// 클라이언트 관리
 	void addClient(Client* client);
@@ -32,6 +37,7 @@ class Channel {
 	void removeOperator(Client* client);
 	bool kickClient(const std::string& nickname);
 	void inviteClient(const std::string& nickname);
+	bool isClientInChannel(Client* client) const;
 	void broadcast(const std::string& message, int except_fd = -1);
 
    private:
@@ -41,6 +47,11 @@ class Channel {
 	std::set<Client*> _clients;				// 채널에 있는 클라이언트 목록
 	std::set<Client*> _operators;			// 채널 운영자 목록
 	std::set<std::string> _invitedClients;	// 초대된 클라이언트 목록
+
+	bool Inviteonly;
+	std::string passwd;
+	unsigned int limit;
+
 };
 
 #endif	// CHANNEL_HPP
