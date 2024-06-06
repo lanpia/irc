@@ -42,13 +42,16 @@ void Channel::removeOperator(Client* client) {
 	_operators.erase(client);
 }
 
-void Channel::kickClient(const std::string& nickname) {
+bool Channel::kickClient(const std::string& nickname) {
 	for (std::vector<Client*>::iterator it = _clients.begin(); it != _clients.end(); ++it) {
 		if ((*it)->getNickname() == nickname) {
 			removeClient(*it);
-			break;
+			// break;
+			std::cout << "Client kicked: " << nickname << std::endl;
+			return true;
 		}
 	}
+	return false;
 }
 
 void Channel::inviteClient(const std::string& nickname) {
