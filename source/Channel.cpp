@@ -1,7 +1,5 @@
 #include "Channel.hpp"
 
-#include <algorithm>
-
 Channel::Channel(const std::string& name)
 	: _name(name) {
 }
@@ -13,7 +11,6 @@ Channel::~Channel() {
 std::string Channel::getName() const { return _name; }
 std::string Channel::getTopic() const { return _topic; }
 std::string Channel::getMode() const { return _mode; }
-std::vector<Client*> Channel::getClients() const { return _clients; }
 
 // Setter
 void Channel::setTopic(const std::string& topic) { _topic = topic; }
@@ -22,12 +19,12 @@ void Channel::setMode(const std::string& mode) { _mode = mode; }
 // 클라이언트 관리
 void Channel::addClient(Client* client) {
 	if (_mode.find('i') == std::string::npos || _invitedClients.find(client->getNickname()) != _invitedClients.end()) {
-		_clients.push_back(client);
+		_clients.insert(client);
 	}
 }
 
 void Channel::removeClient(Client* client) {
-	_clients.erase(std::remove(_clients.begin(), _clients.end(), client), _clients.end());
+    _clients.erase(client);
 }
 
 bool Channel::isOperator(Client* client) const {
@@ -43,7 +40,7 @@ void Channel::removeOperator(Client* client) {
 }
 
 bool Channel::kickClient(const std::string& nickname) {
-	for (std::vector<Client*>::iterator it = _clients.begin(); it != _clients.end(); ++it) {
+	for (std::set<Client*>::iterator it = _clients.begin(); it != _clients.end(); ++it) {
 		if ((*it)->getNickname() == nickname) {
 			removeClient(*it);
 			// break;
@@ -56,4 +53,16 @@ bool Channel::kickClient(const std::string& nickname) {
 
 void Channel::inviteClient(const std::string& nickname) {
 	_invitedClients.insert(nickname);
+}
+
+bool Channel::isClientInChannel(Client* client) const {
+    return _clients.find(client) != _clients.end();
+}
+
+void Channel::broadcast(const std::string& message, int except_fd) {
+	for (std::set<Client*>::iterator it = _clients.begin(); it != _clients.end(); ++it) {
+		if ((*it)->getFd() != except_fd) {
+			(*it)->sendMessage(message);
+		}
+	}
 }

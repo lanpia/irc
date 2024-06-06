@@ -33,8 +33,6 @@ class Server {
 	void acceptNewClient();
 	void handleClientMessage(int client_fd);
 	void disconnectClient(int client_fd);
-	void sendToClient(int client_fd, const std::string& message);
-	void broadcastToChannel(const std::string& channel, const std::string& message, int except_fd = -1);
 
 	// 명령어 처리 함수
 	void handleNick(int client_fd, const std::string& params);
@@ -47,9 +45,6 @@ class Server {
 	void handleTopic(int client_fd, const std::string& params);
 	void handleMode(int client_fd, const std::string& params);
 	void handleQuit(int client_fd, const std::string& params);
-
-
-	bool isSettingUser(int client_fd);
 };
 
 #endif	// SERVER_HPP

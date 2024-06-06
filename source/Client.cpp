@@ -1,4 +1,5 @@
 #include "Client.hpp"
+#include <sys/socket.h>
 
 Client::Client(int fd) : _fd(fd), _messageBuffer("") {
 }
@@ -23,10 +24,6 @@ std::string& Client::getMessageBuffer() {
 	return _messageBuffer;
 }
 
-bool Client::isInChannel(const std::string& channel) const {
-	return _channels.find(channel) != _channels.end();
-}
-
 // Setter
 void Client::setNickname(const std::string& nickname) {
 	_nickname = nickname;
@@ -34,15 +31,6 @@ void Client::setNickname(const std::string& nickname) {
 
 void Client::setUsername(const std::string& username) {
 	_username = username;
-}
-
-// 채널 관련
-void Client::joinChannel(const std::string& channel) {
-	_channels.insert(channel);
-}
-
-void Client::leaveChannel(const std::string& channel) {
-	_channels.erase(channel);
 }
 
 std::map<std::string, std::string> Client::getBuffer(int fd) {
@@ -102,4 +90,8 @@ bool Client::isValidNickname(const std::string& nickname) const{
         return false;
 
     return true;
+}
+
+void Client::sendMessage(const std::string& message) const {
+	send(_fd, message.c_str(), message.size(), 0);
 }

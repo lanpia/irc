@@ -18,7 +18,7 @@ class Channel {
 	std::string getName() const;
 	std::string getTopic() const;
 	std::string getMode() const;
-	std::vector<Client*> getClients() const;
+	bool isClientInChannel(Client* client) const;
 
 	// Setter
 	void setTopic(const std::string& topic);
@@ -32,12 +32,13 @@ class Channel {
 	void removeOperator(Client* client);
 	bool kickClient(const std::string& nickname);
 	void inviteClient(const std::string& nickname);
+	void broadcast(const std::string& message, int except_fd = -1);
 
    private:
 	std::string _name;						// 채널 이름
 	std::string _topic;						// 채널 주제
 	std::string _mode;						// 채널 모드
-	std::vector<Client*> _clients;			// 채널에 있는 클라이언트 목록
+	std::set<Client*> _clients;				// 채널에 있는 클라이언트 목록
 	std::set<Client*> _operators;			// 채널 운영자 목록
 	std::set<std::string> _invitedClients;	// 초대된 클라이언트 목록
 };
