@@ -47,6 +47,9 @@ class Server {
 	void handleTopic(int client_fd, const std::string& params);
 	void handleMode(int client_fd, const std::string& params);
 	void handleQuit(int client_fd, const std::string& params);
+
+
+	bool isSettingUser(int client_fd);
 };
 
 #endif	// SERVER_HPP

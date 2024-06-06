@@ -148,7 +148,7 @@ void Server::setupServer() {
 }
 
 void Server::run() {
-	/* struct pollfd fds[1024]에 대한 설명
+	/* struct pollfd fds[512]에 대한 설명
 	 * poll() 함수에 사용할 파일 디스크립터 목록입니다.
 	 *
 	 * struct pollfd {
@@ -157,7 +157,7 @@ void Server::run() {
 	 *	short revents;	// 발생한 이벤트 종류
 	 * };
 	 */
-	struct pollfd fds[1024];
+	struct pollfd fds[255];
 	int nfds = 1;
 	fds[0].fd = _server_fd;
 	fds[0].events = POLLIN;
@@ -211,34 +211,48 @@ void Server::acceptNewClient() {
 	std::cout << "New client connected: " << new_socket << std::endl;
 }
 
-void Server::handleClientMessage(int client_fd) {
-    char buffer[513];
-    int valread = read(client_fd, buffer, 512);
-    if (valread <= 0) {
-        disconnectClient(client_fd);
-        return;
-    }
-	
-    buffer[valread] = '\0';
-    std::string &messageBuffer = _clients[client_fd]->getMessageBuffer();
-    messageBuffer.append(buffer, valread);
+// void Server::handleClientMessage(int client_fd) {
+// 	// if (!isSettingUser(client_fd)) {
+// 		// return ;
+// 	std::map<std::string, std::string> buffer = _clients[client_fd]->getBuffer(client_fd);
+// 	if (buffer.empty()) {
+// 		disconnectClient(client_fd);
+// 		return;
+// 	} else if (buffer.size() < 512) {
+// 		std::map<std::string, std::string>::iterator it = buffer.begin();
+// 		std::map<std::string, void (Server::*)(int, const std::string&)>::iterator its = _commands.find(it->first);
+// 		if (its != _commands.end()) {
+// 		(this->*(its->second))(client_fd, it->second);
+// 		}
+// 	}
+// }
 
-    size_t pos;
+void Server::handleClientMessage(int client_fd) {
+	char buffer[513];
+	int valread = read(client_fd, buffer, 512);
+	if (valread <= 0) {
+		disconnectClient(client_fd);
+		return;
+	}
+	
+	buffer[valread] = '\0';
+	std::string &messageBuffer = _clients[client_fd]->getMessageBuffer();
+	messageBuffer.append(buffer, valread);
+
+	size_t pos;
 	if ((pos = messageBuffer.find("\r\n")) == std::string::npos) {	// 메시지의 끝을 \r\n으로 인식
 		return;
 	}
 
-    // 메시지가 512 바이트를 초과하는 경우 처리하지 않음
-    if (messageBuffer.size() > 512) {
-        sendToClient(client_fd, "Message too long\n");
-        messageBuffer.clear();
-        return;
-    }
+	if (messageBuffer.size() > 512) {
+		sendToClient(client_fd, "Message too long\n");
+		messageBuffer.clear();
+		return;
+	}
 
 	std::string message = messageBuffer.substr(0, pos);
 	messageBuffer.erase(0, pos + 2);  // 버퍼에서 메시지를 제거 (\r\n 포함)
 
-	// 뒤 공백 및 개행 문자 제거
 	message.erase(message.find_last_not_of(" \n\r\t") + 1);
 
 	std::istringstream iss(message);
@@ -246,7 +260,6 @@ void Server::handleClientMessage(int client_fd) {
 	iss >> command;
 	std::string params;
 	getline(iss, params);
-	// params.erase(0, params.find_first_not_of(" "));	 // 앞 공백 제거
 
 	std::map<std::string, void (Server::*)(int, const std::string&)>::iterator it = _commands.find(command);
 	if (it != _commands.end()) {
@@ -278,5 +291,14 @@ void Server::broadcastToChannel(const std::string& channel, const std::string& m
 				sendToClient(clients[i]->getFd(), message);
 			}
 		}
+	}
+}
+
+bool Server::isSettingUser(int client_fd) {
+	if (_clients[client_fd]->getNickname().empty() || _clients[client_fd]->getUsername().empty()) {
+		sendToClient(client_fd, "ERROR :You need to set your nickname and username first\r\n");
+		return false;
+	} else {
+		return true;
 	}
 }
