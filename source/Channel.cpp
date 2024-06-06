@@ -82,7 +82,7 @@ void Channel::settingChannel(Client *client, bool inviteFlag, const std::string&
 	setTopic(topic);
 }
 
-void Channel::ChangeMode(Client *client, const std::string& mode) {
+void Channel::ChangeMode(const std::string& mode) {
 	if (mode[0] == '+') {
 		for (size_t i = 1; i < mode.size(); i++) {
 			switch (mode[i]) {
@@ -93,7 +93,7 @@ void Channel::ChangeMode(Client *client, const std::string& mode) {
 					setPasswd(mode.substr(i + 1));
 					break;
 				case 'l':
-					setLimit(std::stoi(mode.substr(i + 1)));
+					setLimit(std::atoi(mode.substr(i + 1).c_str()));
 					break;
 				case 't':
 					setTopic(mode.substr(i + 1));

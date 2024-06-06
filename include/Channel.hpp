@@ -6,7 +6,7 @@
 #include <set>
 #include <string>
 #include <vector>
-
+#include <cstdlib>
 #include "Client.hpp"
 
 class Channel {
@@ -41,8 +41,8 @@ class Channel {
 	bool isClientInChannel(Client* client) const;
 	void broadcast(const std::string& message, int except_fd = -1);
 
-	void Channel::settingChannel(Client *Client, bool inviteFlag, const std::string& key, unsigned int limit, std::string topic);
-	void Channel::ChangeMode(Client *client, const std::string& mode);
+	void settingChannel(Client *Client, bool inviteFlag, const std::string& key, unsigned int limit, std::string topic);
+	void ChangeMode(const std::string& mode);
    private:
 	std::string _name;						// 채널 이름
 	std::string _topic;						// 채널 주제
