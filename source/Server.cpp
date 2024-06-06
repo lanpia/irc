@@ -46,16 +46,20 @@ Server::Server(int port, const std::string& password)
 	_responseCode["443"] = " :is already on channel";
 	_responseCode["461"] = " :Not enough parameters";
 	_responseCode["464"] = " :Password incorrect";
-	
 	_responseCode["472"] = " :is unknown mode char to me";
 	_responseCode["481"] = " :Permission Denied- You're not an IRC operator";
-	_responseCode["483"] = " :You cant kill a server";
 	_responseCode["501"] = " :Unknown MODE flag";
 	_responseCode["502"] = " :Cannot change mode for other users";
-	_responseCode["504"] = " :Cannot kill server";
 	_responseCode["511"] = " :Channel doesn't exist";
 	_responseCode["513"] = " :is already registered";
-	
+}
+
+void Server::printServerInfo(std::string codenum, Client* client) {
+	std::map<std::string, std::string>::iterator it;
+	it = _responseCode.find(codenum);
+	if (it != _responseCode.end()) {
+		client->sendMessage("ft_irc: " + codenum + " " + client->getNickname() + ": " + it->second + "\r\n");
+	}
 }
 
 Server::~Server() {
@@ -261,7 +265,7 @@ void Server::handleClientMessage(int client_fd) {
 	}
 
 	if (messageBuffer.size() > 512) {
-		_clients[client_fd]->sendMessage("Message too long\r\n");
+		sendToClient(client_fd, "Message too long\n");
 		messageBuffer.clear();
 		return;
 	}
@@ -270,7 +274,7 @@ void Server::handleClientMessage(int client_fd) {
 	messageBuffer.clear();
 
     if (message[0] == ' ') {
-		_clients[client_fd]->sendMessage("ERROR :Invalid command\r\n");
+        sendToClient(client_fd, "ERROR :Invalid command\r\n");
 		return;
     }
 
@@ -288,7 +292,7 @@ void Server::handleClientMessage(int client_fd) {
 	if (it != _commands.end()) {
 		(this->*(it->second))(client_fd, params);
 	} else {
-		_clients[client_fd]->sendMessage("Unknown command: " + command + "\r\n");
+		sendToClient(client_fd, "Unknown command: " + command + "\r\n");
 	}
 }
 
@@ -300,4 +304,28 @@ void Server::disconnectClient(int client_fd) {
 	close(client_fd);
 	delete _clients[client_fd];
 	_clients.erase(client_fd);
+}
+
+void Server::sendToClient(int client_fd, const std::string& message) {
+	send(client_fd, message.c_str(), message.size(), 0);
+}
+
+void Server::broadcastToChannel(const std::string& channel, const std::string& message, int except_fd) {
+	if (_channels.find(channel) != _channels.end()) {
+		std::vector<Client*> clients = _channels[channel]->getClients();
+		for (size_t i = 0; i < clients.size(); ++i) {
+			if (clients[i]->getFd() != except_fd) {
+				sendToClient(clients[i]->getFd(), message);
+			}
+		}
+	}
+}
+
+bool Server::isSettingUser(int client_fd) {
+	if (_clients[client_fd]->getNickname().empty() || _clients[client_fd]->getUsername().empty()) {
+		sendToClient(client_fd, "ERROR :You need to set your nickname and username first\r\n");
+		return false;
+	} else {
+		return true;
+	}
 }

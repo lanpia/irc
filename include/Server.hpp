@@ -32,6 +32,7 @@ class Server {
 
 	// responseCode
 	std::map<std::string, std::string> _responseCode;
+	void Server::printServerInfo(std::string codenum, Client* _client);
 
 	void acceptNewClient();
 	void handleClientMessage(int client_fd);
