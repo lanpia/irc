@@ -18,7 +18,7 @@ void Server::handleNick(int client_fd, const std::string& params) {
 	}
 
 	if (_clients[client_fd]->isValidNickname(params) == false) {
-		sendToClient(client_fd, "Invalid nickname\r\n");
+		_clients[client_fd]->sendMessage("Invalid nickname\r\n");
 		return;
 	}
 
