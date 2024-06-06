@@ -211,22 +211,6 @@ void Server::acceptNewClient() {
 	std::cout << "New client connected: " << new_socket << std::endl;
 }
 
-// void Server::handleClientMessage(int client_fd) {
-// 	// if (!isSettingUser(client_fd)) {
-// 		// return ;
-// 	std::map<std::string, std::string> buffer = _clients[client_fd]->getBuffer(client_fd);
-// 	if (buffer.empty()) {
-// 		disconnectClient(client_fd);
-// 		return;
-// 	} else if (buffer.size() < 512) {
-// 		std::map<std::string, std::string>::iterator it = buffer.begin();
-// 		std::map<std::string, void (Server::*)(int, const std::string&)>::iterator its = _commands.find(it->first);
-// 		if (its != _commands.end()) {
-// 		(this->*(its->second))(client_fd, it->second);
-// 		}
-// 	}
-// }
-
 void Server::handleClientMessage(int client_fd) {
 	char buffer[513];
 	int valread = read(client_fd, buffer, 512);
@@ -251,7 +235,12 @@ void Server::handleClientMessage(int client_fd) {
 	}
 
 	std::string message = messageBuffer.substr(0, pos);
-	messageBuffer.erase(0, pos + 2);  // 버퍼에서 메시지를 제거 (\r\n 포함)
+	messageBuffer.clear();
+
+    if (message[0] == ' ') {
+        sendToClient(client_fd, "ERROR :Invalid command\r\n");
+		return;
+    }
 
 	message.erase(message.find_last_not_of(" \n\r\t") + 1);
 
@@ -259,7 +248,9 @@ void Server::handleClientMessage(int client_fd) {
 	std::string command;
 	iss >> command;
 	std::string params;
-	getline(iss, params);
+	if (getline(iss, params)) {
+		params.erase(0, 1);
+	}
 
 	std::map<std::string, void (Server::*)(int, const std::string&)>::iterator it = _commands.find(command);
 	if (it != _commands.end()) {
