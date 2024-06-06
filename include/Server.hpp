@@ -30,6 +30,9 @@ class Server {
 	std::map<std::string, Channel*> _channels;									 // 채널 목록
 	std::map<std::string, void (Server::*)(int, const std::string&)> _commands;	 // 커맨드 매핑
 
+	// responseCode
+	std::map<std::string, std::string> _responseCode;
+
 	void acceptNewClient();
 	void handleClientMessage(int client_fd);
 	void disconnectClient(int client_fd);
