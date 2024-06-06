@@ -16,6 +16,10 @@ void Server::handleNick(int client_fd, const std::string& params) {
 		sendToClient(client_fd, "Nickname already in use\r\n");
 		return;
 	}
+	// if (_clients[client_fd]->isValidNickname(params) == false) {
+	// 	sendToClient(client_fd, "Invalid nickname\r\n");
+	// 	return;
+	// }
 	_clients[client_fd]->setNickname(params);
 	sendToClient(client_fd, "NICK " + _clients[client_fd]->getNickname() + "\r\n");
 }
@@ -38,6 +42,8 @@ void Server::handleJoin(int client_fd, const std::string& params) {
 	if (_channels.find(channelName) == _channels.end()) {
 		_channels[channelName] = new Channel(channelName);
 		broadcastToChannel(channelName, "Channel created: " + channelName + "\r\n");
+		_channels[channelName]->addOperator(_clients[client_fd]);
+		sendToClient(client_fd, "Now youer Channel operator\r\n");
 		broadcastToChannel(channelName, "you have to Setting TOPIC\r\n");
 	}
 	_channels[channelName]->addClient(_clients[client_fd]);
@@ -60,8 +66,8 @@ void Server::handlePart(int client_fd, const std::string& params) {
 
 static bool isUserInChannel(Client &_clients, const std::string& channelName) {
 	if (!_clients.isInChannel(channelName))
-		return false;
-	return true;
+		return true;
+	return false;
 }
 
 void Server::handlePrivmsg(int client_fd, const std::string& params) {
@@ -98,7 +104,9 @@ void Server::handleKick(int client_fd, const std::string& params) {
 		return;
 	}
 	if (_channels.find(channelName) != _channels.end() && _channels[channelName]->isOperator(_clients[client_fd])) {
-		_channels[channelName]->kickClient(target);
+		// _channels[channelName]->kickClient(target);
+		_channels[channelName]->removeClient(_clients[client_fd]);
+		_clients[client_fd]->leaveChannel(channelName);
 		sendToClient(client_fd, "KICK " + channelName + " " + target + "\r\n");
 		broadcastToChannel(channelName, target + " has been kicked from the channel\r\n");
 	}
