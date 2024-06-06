@@ -269,12 +269,3 @@ void Server::disconnectClient(int client_fd) {
 	delete _clients[client_fd];
 	_clients.erase(client_fd);
 }
-
-bool Server::isSettingUser(int client_fd) {
-	if (_clients[client_fd]->getNickname().empty() || _clients[client_fd]->getUsername().empty()) {
-		_clients[client_fd]->sendMessage("ERROR :You need to set your nickname and username first\r\n");
-		return false;
-	} else {
-		return true;
-	}
-}
