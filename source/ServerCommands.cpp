@@ -16,10 +16,10 @@ void Server::handleNick(int client_fd, const std::string& params) {
 		sendToClient(client_fd, "Nickname already in use\r\n");
 		return;
 	}
-	// if (_clients[client_fd]->isValidNickname(params) == false) {
-	// 	sendToClient(client_fd, "Invalid nickname\r\n");
-	// 	return;
-	// }
+	if (_clients[client_fd]->isValidNickname(params) == false) {
+		sendToClient(client_fd, "Invalid nickname\r\n");
+		return;
+	}
 	_clients[client_fd]->setNickname(params);
 	sendToClient(client_fd, "NICK " + _clients[client_fd]->getNickname() + "\r\n");
 }
