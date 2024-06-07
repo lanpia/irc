@@ -38,6 +38,7 @@ class Server {
 	void disconnectClient(int client_fd);
 
 	// 명령어 처리 함수
+	void handlePass(int client_fd, const std::string& params);
 	void handleNick(int client_fd, const std::string& params);
 	void handleUser(int client_fd, const std::string& params);
 	void handleJoin(int client_fd, const std::string& params);

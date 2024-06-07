@@ -1,7 +1,10 @@
 #include "Client.hpp"
 #include <sys/socket.h>
 
-Client::Client(int fd) : _fd(fd), _messageBuffer("") {
+Client::Client(int fd) : _fd(fd), _authenticated(false) {
+	_nickname.clear();
+	_username.clear();
+	_messageBuffer.clear();
 }
 
 Client::~Client() {
@@ -22,6 +25,10 @@ std::string Client::getUsername() const {
 
 std::string& Client::getMessageBuffer() {
 	return _messageBuffer;
+}
+
+bool Client::isAuthenticated() const {
+	return _authenticated;
 }
 
 // Setter
@@ -94,4 +101,8 @@ bool Client::isValidNickname(const std::string& nickname) const{
 
 void Client::sendMessage(const std::string& message) const {
 	send(_fd, message.c_str(), message.size(), 0);
+}
+
+void Client::setAuthenticated(bool auth) {
+	_authenticated = auth;
 }

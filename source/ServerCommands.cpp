@@ -151,3 +151,15 @@ void Server::handleQuit(int client_fd, const std::string& params) {
 	(void)params;
 	disconnectClient(client_fd);
 }
+
+void Server::handlePass(int client_fd, const std::string& params) {
+	if (_clients[client_fd]->isAuthenticated() == true) {
+		_clients[client_fd]->sendMessage("You are already authenticated\r\n");
+		return;
+	}
+	if (params == _password) {
+		_clients[client_fd]->setAuthenticated(true);
+	} else {
+		_clients[client_fd]->sendMessage("Invalid password\r\n");
+	}
+}

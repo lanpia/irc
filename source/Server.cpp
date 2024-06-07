@@ -14,6 +14,7 @@ Server::Server(int port, const std::string& password)
 
 	// SeverCommands.cpp에 있는 명령어 처리 함수들을 _commands에 매핑
 	// C++ 98에서는 중괄호 초기화가 불가능하기에, 인덱스 연산자를 사용하여 초기화
+	_commands["PASS"] = &Server::handlePass;
 	_commands["NICK"] = &Server::handleNick;
 	_commands["USER"] = &Server::handleUser;
 	_commands["JOIN"] = &Server::handleJoin;
@@ -286,6 +287,16 @@ void Server::handleClientMessage(int client_fd) {
 
 	std::map<std::string, void (Server::*)(int, const std::string&)>::iterator it = _commands.find(command);
 	if (it != _commands.end()) {
+		if (!_clients[client_fd]->isAuthenticated() && command != "PASS") {
+			_clients[client_fd]->sendMessage("ERROR :You have not registered\r\n");
+			return;
+		} else if (_clients[client_fd]->isAuthenticated() && _clients[client_fd]->getNickname().empty() && command != "NICK") {
+			_clients[client_fd]->sendMessage("ERROR :You have not registered\r\n");
+			return;
+		} else if (!_clients[client_fd]->getNickname().empty() && _clients[client_fd]->getUsername().empty() && command != "USER") {
+			_clients[client_fd]->sendMessage("ERROR :You have not registered\r\n");
+			return;
+		}
 		(this->*(it->second))(client_fd, params);
 	} else {
 		_clients[client_fd]->sendMessage("Unknown command: " + command + "\r\n");
