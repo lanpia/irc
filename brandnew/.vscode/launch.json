@@ -1,0 +1,26 @@
+{
+	"version": "0.2.0",
+	"configurations": [
+	  {
+		"name": "Debug",
+		"type": "lldb",
+		"request": "launch",
+		"program": "${workspaceFolder}/ircserv",
+		"args": [
+			"4000",
+			"1"
+		],
+		"cwd": "${workspaceFolder}",
+		"preLaunchTask": "build",
+		"postDebugTask": "clean"
+	  }
+	],
+	"inputs": [
+	  {
+		"id": "executableArgs",
+		"type": "promptString",
+		"description": "인자를 입력해 주세요.\n",
+		"default": ""
+	  }
+	]
+  }
