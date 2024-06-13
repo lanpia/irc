@@ -36,7 +36,31 @@ void Server::handleUser(int client_fd, const std::string& params) {
 }
 
 void Server::handleJoin(int client_fd, const std::string& params) {
+	// struct exception_cases {
+	// 	void *condition;
+	// 	bool expected;
+	// 	std::string exceptMsg;
+	// } {
+	// 	_clients[client_fd]->getNickname().empty(), true, "You have to setting Nickname",
+	// 	_clients[client_fd]->getUsername().empty(), true, "You have to setting Username",
+	// 	_clients[client_fd]->getNickname().empty() || _clients[client_fd]->getUsername().empty(),
+	// 	_clients[client_fd]->getNickname().empty() && _clients[client_fd]->getUsername().empty()
+	// };
+	
+	// for (; ; ) {
+	// 	if (exception_cases.condition == exception_cases.expected) {
+	// 		_clients[client_fd]->sendMessage(exception_cases.exceptMsg + "\r\n");
+	// 		break;
+	// 	}
+	// }
+
 	std::string channelName = params;
+	std::string passwd;
+	size_t pos = channelName.find(" ");
+	if (pos != std::string::npos) {
+		passwd = channelName.substr(pos + 1);
+		channelName = channelName.substr(0, pos);
+	}
 	if (_clients[client_fd]->getNickname().empty() || _clients[client_fd]->getUsername().empty()) {
 		_clients[client_fd]->sendMessage("You have to setting Username, Nickname\r\n");
 		return;
@@ -44,9 +68,23 @@ void Server::handleJoin(int client_fd, const std::string& params) {
 	if (_channels.find(channelName) == _channels.end()) {
 		_channels[channelName] = new Channel(channelName);
 		_channels[channelName]->broadcast("Channel created: " + channelName + "\r\n");
-		_channels[channelName]->addOperator(_clients[client_fd]);
+		// _channels[channelName]->addOperator(_clients[client_fd]);
+		_channels[channelName]->settingChannel(_clients[client_fd], false, "", 0, "");
 		_clients[client_fd]->sendMessage("Now youer Channel operator\r\n");
 		_channels[channelName]->broadcast("you have to Setting TOPIC\r\n");
+	}
+	// if (_channels[channelName]->isInviteonly() == true) {
+	// 	_clients[client_fd]->sendMessage("JOIN fail\r\n");
+	// 	return ;
+	// }
+	// if(_channels[channelName]->getLimit() != 0 && _channels[channelName]->getLimit() <= _channels[channelName]->getClients().size()) {
+	// 	_clients[client_fd]->sendMessage("Channel is full\r\n");
+	// 	return ;
+	// }
+	if (_channels[channelName]->checkMode(params) != "Success") {
+		// exception(std::string )
+		_clients[client_fd]->sendMessage(_channels[channelName]->checkMode(params) + "\r\n");
+		return;
 	}
 	_channels[channelName]->addClient(_clients[client_fd]);
 	_clients[client_fd]->sendMessage("JOIN " + channelName + "\r\n");
@@ -136,12 +174,15 @@ void Server::handleMode(int client_fd, const std::string& params) {
 	size_t pos = params.find(" ");
 	std::string channelName = params.substr(0, pos);
 	std::string mode = params.substr(pos + 1);
+	std::cout << pos << channelName << mode << std::endl;
 	if (!_channels[channelName]->isClientInChannel(_clients[client_fd])) {
 		_clients[client_fd]->sendMessage("You are not in the channel\r\n");
 		return;
 	}
+	// if (_channels[channelName]->checkMode(params) != "Success")
 	if (_channels.find(channelName) != _channels.end() && _channels[channelName]->isOperator(_clients[client_fd])) {
 		_channels[channelName]->setMode(mode);
+		_channels[channelName]->ChangeMode(mode);
 		_clients[client_fd]->sendMessage("MODE " + channelName + " " + mode + "\r\n");
 		_channels[channelName]->broadcast("MODE " + channelName + " " + mode + "\r\n");
 	}
@@ -150,16 +191,4 @@ void Server::handleMode(int client_fd, const std::string& params) {
 void Server::handleQuit(int client_fd, const std::string& params) {
 	(void)params;
 	disconnectClient(client_fd);
-}
-
-void Server::handlePass(int client_fd, const std::string& params) {
-	if (_clients[client_fd]->isAuthenticated() == true) {
-		_clients[client_fd]->sendMessage("You are already authenticated\r\n");
-		return;
-	}
-	if (params == _password) {
-		_clients[client_fd]->setAuthenticated(true);
-	} else {
-		_clients[client_fd]->sendMessage("Invalid password\r\n");
-	}
 }

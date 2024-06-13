@@ -1,4 +1,14 @@
-// 채널의 클라이언트 관리, 주제 설정, 모드 설정 등
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   Channel.hpp                                        :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: nahyulee <nahyulee@student.42seoul.kr>     +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2024/06/08 18:38:16 by nahyulee          #+#    #+#             */
+/*   Updated: 2024/06/14 00:52:52 by nahyulee         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
 
 #ifndef CHANNEL_HPP
 #define CHANNEL_HPP
@@ -6,41 +16,37 @@
 #include <set>
 #include <string>
 #include <vector>
+#include <cstdlib>
 
-#include "Client.hpp"
+class Client;
 
 class Channel {
-   public:
+
+private:
+	Channel();
+	Channel(const Channel& copy);
+	Channel& operator=(const Channel& copy);
+
+	enum e_info{chatname, topic, limits, passwd, inviteOnly};
+	std::string ChatInfo[5];
+	
+	std::set<Client*> _clients;
+
+public:
 	Channel(const std::string& name);
 	~Channel();
 
-	// Getter
-	std::string getName() const;
-	std::string getTopic() const;
-	std::string getMode() const;
-	bool isClientInChannel(Client* client) const;
+	std::string is(enum e_info idx) const;
+	void set(enum e_info idx, const std::string opt, const std::string& str);
+	
+	class ChannelException : public std::exception {
+	public:
+		virtual ~ChannelException() throw() { const char *what(); }
+	};
+	
+	std::string ClientInOut(std::string inout, Client* client) throw(Channel::ChannelException);
+	
 
-	// Setter
-	void setTopic(const std::string& topic);
-	void setMode(const std::string& mode);
-
-	// 클라이언트 관리
-	void addClient(Client* client);
-	void removeClient(Client* client);
-	bool isOperator(Client* client) const;
-	void addOperator(Client* client);
-	void removeOperator(Client* client);
-	bool kickClient(const std::string& nickname);
-	void inviteClient(const std::string& nickname);
-	void broadcast(const std::string& message, int except_fd = -1);
-
-   private:
-	std::string _name;						// 채널 이름
-	std::string _topic;						// 채널 주제
-	std::string _mode;						// 채널 모드
-	std::set<Client*> _clients;				// 채널에 있는 클라이언트 목록
-	std::set<Client*> _operators;			// 채널 운영자 목록
-	std::set<std::string> _invitedClients;	// 초대된 클라이언트 목록
 };
 
-#endif	// CHANNEL_HPP
+#endif

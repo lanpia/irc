@@ -1,108 +1,93 @@
-#include "Client.hpp"
-#include <sys/socket.h>
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   Client.cpp                                         :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: nahyulee <nahyulee@student.42seoul.kr>     +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2024/06/08 19:50:01 by nahyulee          #+#    #+#             */
+/*   Updated: 2024/06/13 21:28:35 by nahyulee         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
 
-Client::Client(int fd) : _fd(fd), _authenticated(false) {
-	_nickname.clear();
-	_username.clear();
-	_messageBuffer.clear();
-}
+# include "Client.hpp"
 
-Client::~Client() {
-}
+Client::Client() {}
+Client::Client(const Client& copy) { *this = copy; }
+Client& Client::operator=(const Client& copy) { (void) copy; return *this; }
+Client::Client(int fd) : fd(fd) {}
+Client::~Client() {}
 
-// Getter
-int Client::getFd() const {
-	return _fd;
-}
-
-std::string Client::getNickname() const {
-	return _nickname;
-}
-
-std::string Client::getUsername() const {
-	return _username;
-}
-
-std::string& Client::getMessageBuffer() {
-	return _messageBuffer;
-}
-
-bool Client::isAuthenticated() const {
-	return _authenticated;
-}
-
-// Setter
-void Client::setNickname(const std::string& nickname) {
-	_nickname = nickname;
-}
-
-void Client::setUsername(const std::string& username) {
-	_username = username;
-}
-
-std::map<std::string, std::string> Client::getBuffer(int fd) {
-	std::map<std::string, std::string> buffer;
-	char msg[513] = {0};
-	int readsize = read(fd, msg, 512);
-	if (readsize <= 0)
-		return buffer;
-	msg[readsize] = '\0';
-	std::string message = getMessageBuffer();
-	message = message.append(msg, readsize);
-	if (message.empty()) {
-		return buffer;
+bool Client::isValidNickname(const std::string& nickname) const {
+	if (nickname.size() == 0 || nickname.size() > 9)
+		return false;
+	for (size_t i = 0; i < nickname.size(); i++) {
+		if (!isalnum(nickname[i]))
+			return false;
 	}
-	if (message.size() == 512) {
-		buffer["PRIVMSG"] = " :Message too long\r\n";
-		return buffer;
-	}
-	// size_t pos = message.find("\r\n");
-	// if (pos == std::string::npos) {
-	// 	buffer["ERROR"] =  " :message is not end of newline\r\n";
-	// 	return buffer;
-	// }
-	message = message.substr(0, message.find("\r\n"));
-	std::istringstream iss(message);
-	std::string command;
-	iss >> command;
-	if (command == "NICK" || command == "USER" || command == "JOIN" || command == "PART" || command == "PRIVMSG" || command == "KICK" || command == "INVITE" || command == "TOPIC" || command == "MODE" || command == "QUIT") {
-		std::string params;
-		getline(iss, params);
-		params.erase(0, params.find_first_not_of(" "));
-		buffer[command] = params;
-	}
-	else {
-		buffer["ERROR"] =  " :Unknown command\r\n";
-	}
-	return buffer;
-}
-
-bool Client::isValidNickname(const std::string& nickname) const{
-    // Check length
-    if (nickname.length() > 9) // 9자를 초과하는지 확인
+	if (nickname == "root" || nickname == "admin")
         return false;
+	return true;
+}
 
-    // Check first character
-    if (!isalpha(nickname[0])) // 첫 글자가 알파벳인지 확인
-        return false;
+std::string Client::is(enum e_info idx) const {
+	return this->ClientInfo[idx];
+}
 
-    // Check for invalid characters
-    for (size_t i = 0; i < nickname.length(); ++i) {
-        if (!isalnum(nickname[i]) && nickname[i] != '_') // 알파벳, 숫자, 언더스코어(_)만 허용
-            return false;
+void Client::set(enum e_info idx, const std::string opt, const std::string& str) {
+	if (opt == "+")
+		this->ClientInfo[idx] = str;
+	else if (opt == "-")
+		this->ClientInfo[idx] = "";
+}
+
+Triple<std::string, std::string, std::string> Client::parseMessage() {
+    char buf[513] = {0};
+	int len = recv(this->fd, buf, 512, 0);
+	if (len <= 0) {
+		throw Client::ClientException("Client disconnected");
+	}
+	buf[len] = '\0';
+	std::string buffer(buf);
+	if (buffer.size() == 512) {
+		throw Client::ClientException("Message too long");
+	}
+	if ((buffer.find("\r\n")) == std::string::npos) {
+		throw Client::ClientException("Message not complete");
+	}
+	std::string command, target, message;
+    std::istringstream iss(buffer);
+    iss >> command;
+    std::getline(iss, target, ' ');
+	
+    std::getline(iss, message);
+    if (!message.empty() && message[0] == ' ') {
+        message.erase(0, 1);
     }
-
-    // Check reserved nicknames
-    if (nickname == "root" || nickname == "admin") // 예약된 닉네임인지 확인
-        return false;
-
-    return true;
+    return Triple<std::string, std::string, std::string>(command, target, message);
 }
 
 void Client::sendMessage(const std::string& message) const {
 	send(_fd, message.c_str(), message.size(), 0);
 }
+/* 
+PRIVMSG #t hihi
+PRIVMSG t0 hihi
 
-void Client::setAuthenticated(bool auth) {
-	_authenticated = auth;
-}
+TOPIC #t hihi
+
+JOIN #t passwd
+JOIN #t0
+
+PART #t
+
+KICK #t t0
+
+INVITE #t t0
+
+MODE +i/-i #t 	-> invite only
+MODE +o/-o #t t0-> operator
+MODE +k/-k #t 	-> password
+MODE +l/-l #t 	-> limit
+MODE +t/-t #t 	-> topic
+ */

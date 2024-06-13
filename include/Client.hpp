@@ -1,4 +1,14 @@
-//  클라이언트의 닉네임 설정, 유저네임 설정, 채널 참여/탈퇴 등
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   Client.hpp                                         :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: nahyulee <nahyulee@student.42seoul.kr>     +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2024/06/08 19:50:19 by nahyulee          #+#    #+#             */
+/*   Updated: 2024/06/14 00:54:10 by nahyulee         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
 
 #ifndef CLIENT_HPP
 #define CLIENT_HPP
@@ -6,40 +16,51 @@
 #include <set>
 #include <string>
 #include <map>
-
 #include <iostream>
 #include <sstream>
-
 #include <unistd.h>
 #include <fcntl.h>
+#include <sys/socket.h>
+#include <sys/types.h> // ssize_t recv(int sockfd, void *buf, size_t len, int flags);
 
-class Client {
-   public:
-	Client(int fd);
-	~Client();
+// template <typename T1, typename T2>
+// struct Pair {
+//     T1 first;
+//     T2 second;
+//     Pair(const T1& f, const T2& s) : first(f), second(s) {}
+// };
 
-	// Getter
-	int getFd() const;
-	std::string getNickname() const;
-	std::string getUsername() const;
-	std::string& getMessageBuffer();
-	bool isAuthenticated() const;
-
-	// Setter
-	void setNickname(const std::string& nickname);
-	void setUsername(const std::string& username);
-	void setAuthenticated(bool auth);
-
-	std::map<std::string, std::string> getBuffer(int fd);
-
-	bool isValidNickname(const std::string& nickname) const;
-	void sendMessage(const std::string& message) const;
-   private:
-	int _fd;						  // 클라이언트 소켓 파일 디스크립터
-	bool _authenticated;			  // 클라이언트 인증 여부
-	std::string _nickname;			  // 클라이언트 닉네임
-	std::string _username;			  // 클라이언트 사용자 이름
-	std::string _messageBuffer;		  // 클라이언트로부터 받은 메시지 버퍼
+template <typename T1, typename T2, typename T3>
+struct Triple {
+    T1 first;
+    T2 second;
+    T3 third;
+    Triple(const T1& f, const T2& s, const T3& t) : first(f), second(s), third(t) {}
 };
 
-#endif	// CLIENT_HPP
+class Client {
+private:
+	Client();
+	Client(const Client& copy);
+	Client& operator=(const Client& copy);
+	
+	enum e_info{Nickname, Username, Operator};
+	int fd;
+	std::string ClientInfo[3];
+
+public:
+	Client(int fd);
+	~Client();
+	class ClientException : public std::runtime_error {
+    public:
+        ClientException(const std::string& message) : std::runtime_error(message) {}
+    };
+	void set(enum e_info idx, const std::string opt, const std::string& str);
+	std::string is(enum e_info idx) const;
+	
+	bool isValidNickname(const std::string& nickname) const;
+	Triple<std::string, std::string, std::string> parseMessage();
+	void sendMessage(const std::string& message) const;
+};
+
+#endif
