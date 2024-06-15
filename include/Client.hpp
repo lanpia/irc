@@ -6,7 +6,7 @@
 /*   By: nahyulee <nahyulee@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/06/08 19:50:19 by nahyulee          #+#    #+#             */
-/*   Updated: 2024/06/14 00:54:10 by nahyulee         ###   ########.fr       */
+/*   Updated: 2024/06/15 18:13:42 by nahyulee         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -44,11 +44,11 @@ private:
 	Client(const Client& copy);
 	Client& operator=(const Client& copy);
 	
-	enum e_info{Nickname, Username, Operator};
 	int fd;
-	std::string ClientInfo[3];
+	std::string ClientInfo[4];
 
 public:
+	enum e_info{Nickname, Username, InChannel, Operator};
 	Client(int fd);
 	~Client();
 	class ClientException : public std::runtime_error {
@@ -57,7 +57,7 @@ public:
     };
 	void set(enum e_info idx, const std::string opt, const std::string& str);
 	std::string is(enum e_info idx) const;
-	
+	int getFd() const;
 	bool isValidNickname(const std::string& nickname) const;
 	Triple<std::string, std::string, std::string> parseMessage();
 	void sendMessage(const std::string& message) const;

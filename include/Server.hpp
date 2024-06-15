@@ -6,7 +6,7 @@
 /*   By: nahyulee <nahyulee@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/06/08 19:58:12 by nahyulee          #+#    #+#             */
-/*   Updated: 2024/06/14 00:41:20 by nahyulee         ###   ########.fr       */
+/*   Updated: 2024/06/15 18:37:49 by nahyulee         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,13 +27,7 @@
 #include <sstream>
 #include "Channel.hpp"
 #include "Client.hpp"
-template <typename T1, typename T2, typename T3>
-struct Triple {
-    T1 first;
-    T2 second;
-    T3 third;
-    Triple(const T1& f, const T2& s, const T3& t) : first(f), second(s), third(t) {}
-};
+
 class Server {
 private:
 	Server();
@@ -58,8 +52,10 @@ public:
     };
 	void ServerRun();
 	void sendMessage(const std::string& message) const;
-	void broadcast(const std::string& message, int except_fd = -1);
 	void disconnectClient(int client_fd);
+	void handleClientMessage(int client_fd);
+	Triple<std::string, std::string, std::string> modeparse(std::string const &message);
+	bool checkDefaultInfo(int level, int client_fd);
 
 	void handleNick(int client_fd, const std::string& target, const std::string& message);
 	void handleUser(int client_fd, const std::string& target, const std::string& message);

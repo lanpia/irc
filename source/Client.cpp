@@ -6,7 +6,7 @@
 /*   By: nahyulee <nahyulee@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/06/08 19:50:01 by nahyulee          #+#    #+#             */
-/*   Updated: 2024/06/13 21:28:35 by nahyulee         ###   ########.fr       */
+/*   Updated: 2024/06/15 18:12:35 by nahyulee         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,7 +15,12 @@
 Client::Client() {}
 Client::Client(const Client& copy) { *this = copy; }
 Client& Client::operator=(const Client& copy) { (void) copy; return *this; }
-Client::Client(int fd) : fd(fd) {}
+Client::Client(int fd) : fd(fd) {
+	this->ClientInfo[Nickname] = "";
+	this->ClientInfo[Username] = "";
+	this->ClientInfo[InChannel] = "false";
+	this->ClientInfo[Operator] = "false";
+}
 Client::~Client() {}
 
 bool Client::isValidNickname(const std::string& nickname) const {
@@ -28,6 +33,10 @@ bool Client::isValidNickname(const std::string& nickname) const {
 	if (nickname == "root" || nickname == "admin")
         return false;
 	return true;
+}
+
+int Client::getFd() const {
+	return this->fd;
 }
 
 std::string Client::is(enum e_info idx) const {
@@ -68,8 +77,9 @@ Triple<std::string, std::string, std::string> Client::parseMessage() {
 }
 
 void Client::sendMessage(const std::string& message) const {
-	send(_fd, message.c_str(), message.size(), 0);
+	send(fd, message.c_str(), message.size(), 0);
 }
+
 /* 
 PRIVMSG #t hihi
 PRIVMSG t0 hihi
@@ -85,9 +95,24 @@ KICK #t t0
 
 INVITE #t t0
 
-MODE +i/-i #t 	-> invite only
-MODE +o/-o #t t0-> operator
-MODE +k/-k #t 	-> password
-MODE +l/-l #t 	-> limit
-MODE +t/-t #t 	-> topic
+MODE #t +i/-i 	-> invite only
+MODE #t +o/-o t0-> operator
+MODE #t +k/-k 	-> password
+MODE #t +l/-l 	-> limit 최대유저수
+MODE #t +t/-t 	-> topic
+
+MODE #t +iklt key 50 test
+MODE #t +ik -lt key
+
+MODE #t -ik -lt
+MODE #t -iklt							최대유저수 오퍼레이터
+<channel> {[+|-]|o|p|s|i|t|n|b|v} [<limit>] [<user>]
+               [<ban mask>]
+
+
+
+
+mode #채널이름 +/- ioklt 
+// 
+
  */
