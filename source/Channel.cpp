@@ -6,7 +6,7 @@
 /*   By: nahyulee <nahyulee@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/06/08 19:10:06 by nahyulee          #+#    #+#             */
-/*   Updated: 2024/06/15 18:33:43 by nahyulee         ###   ########.fr       */
+/*   Updated: 2024/06/15 19:16:18 by nahyulee         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,11 +29,11 @@ void Channel::ChannelInit() {
 	this->ChatInfo[inviteOnly] = "";
 }
 
-std::string Channel::is(enum e_info idx) const {
+std::string Channel::is(int idx) const {
 	return this->ChatInfo[idx];
 }
 
-void Channel::set(enum e_info idx, const std::string opt, const std::string& str) {
+void Channel::set(int idx, const std::string opt, const std::string& str) {
 	if (opt == "+")
 		this->ChatInfo[idx] = str;
 	else if (opt == "-")

@@ -6,6 +6,7 @@ import readline
 # 서버와 연결할 호스트와 포트 번호를 설정합니다.
 HOST = "127.0.0.1"
 PORT = 4000
+PASS = "mypasswd"
 NICK = "t0"
 USER = "t0"
 CHANNEL = "#t"
@@ -28,7 +29,8 @@ def main():
         # 텔넷 연결을 설정합니다.
         tn = telnetlib.Telnet(HOST, PORT)
         print(f"Connected to {HOST}:{PORT}")
-
+        tn.write(f"PASS {PASS}\r\n".encode('utf-8'))
+        time.sleep(0.5)
         # 자동으로 NICK, USER, JOIN 명령어 전송
         tn.write(f"NICK {NICK}\r\n".encode('utf-8'))
         time.sleep(0.5)

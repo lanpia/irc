@@ -6,7 +6,7 @@
 /*   By: nahyulee <nahyulee@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/06/08 19:58:05 by nahyulee          #+#    #+#             */
-/*   Updated: 2024/06/15 19:07:58 by nahyulee         ###   ########.fr       */
+/*   Updated: 2024/06/16 01:17:08 by nahyulee         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -95,10 +95,14 @@ void Server::acceptNewClient() {
 	Triple<std::string, std::string, std::string> msg;
 	msg = this->clients[new_socket]->parseMessage();
 	if (msg.first == "PASS") {
-		if (msg.second == password) {
+		if (msg.third == password) {
 				clients[new_socket]->sendMessage("Authentication successful!\n");
 			} else {
-				clients[new_socket]->sendMessage("Invalid password. Try again: ");
+				clients[new_socket]->sendMessage("Authentication failed!\n");
+				close(new_socket);
+				delete clients[new_socket];
+				clients.erase(new_socket);
+				return;
 			}
 	} else if (new_socket == 0) {
         close(new_socket);
@@ -120,26 +124,26 @@ void Server::disconnectClient(int client_fd) {
 	delete clients[client_fd];
 	clients.erase(client_fd);
 }
-
 void Server::handleClientMessage(int client_fd) {
-	Triple<std::string, std::string, std::string> msg = this->clients[client_fd]->parseMessage();
-	std::map<std::string, void (Server::*)(int, const std::string&, const std::string&)> _commands;
-	_commands["NICK"] = &Server::handleNick;
-	_commands["USER"] = &Server::handleUser;
-	_commands["JOIN"] = &Server::handleJoin;
-	_commands["PART"] = &Server::handlePart;
-	_commands["PRIVMSG"] = &Server::handlePrivmsg;
-	_commands["KICK"] = &Server::handleKick;
-	_commands["INVITE"] = &Server::handleInvite;
-	_commands["TOPIC"] = &Server::handleTopic;
-	_commands["MODE"] = &Server::handleMode;
-	_commands["QUIT"] = &Server::handleQuit;
-	std::map<std::string, void (Server::*)(int, const std::string&, const std::string&)>::iterator it = msg.first;
-	if (it != _commands.end()) {
-		(this->*(it->second))(client_fd, msg.second, msg.third);
-	} else {
-		clients[client_fd]->sendMessage("Unknown command: " +  msg.second + msg.third + "\r\n");
-	}
+    Triple<std::string, std::string, std::string> msg = this->clients[client_fd]->parseMessage();
+    std::map<std::string, void (Server::*)(int, const std::string&, const std::string&)> _commands;
+    _commands["USER"] = &Server::handleUser;
+    _commands["NICK"] = &Server::handleNick;
+    _commands["JOIN"] = &Server::handleJoin;
+    _commands["PART"] = &Server::handlePart;
+    _commands["PRIVMSG"] = &Server::handlePrivmsg;
+    _commands["KICK"] = &Server::handleKick;
+    _commands["INVITE"] = &Server::handleInvite;
+    _commands["TOPIC"] = &Server::handleTopic;
+    _commands["MODE"] = &Server::handleMode;
+    _commands["QUIT"] = &Server::handleQuit;
+
+    std::map<std::string, void (Server::*)(int, const std::string&, const std::string&)>::iterator it = _commands.find(msg.first);
+    if (it != _commands.end()) {
+        (this->*(it->second))(client_fd, msg.second, msg.third);
+    } else {
+        clients[client_fd]->sendMessage("Unknown command: " + msg.second + " " + msg.third + "\r\n");
+    }
 }
 
 bool Server::checkDefaultInfo(int level, int client_fd) {
@@ -178,15 +182,15 @@ void Server::handleNick(int client_fd, const std::string& target, const std::str
 }
 
 void Server::handleUser(int client_fd, const std::string& target, const std::string& message) {
-	for (std::map<int, Client*>::const_iterator it = clients.begin(); it != clients.end(); ++it) {
-		if (it->second->is(Client::Username) == target) {
-			clients[client_fd]->sendMessage("Username already in use\r\n");
-			return;
-		}
-	}
-	clients[client_fd]->set(Client::Username, "+", target);
+	// for (std::map<int, Client*>::const_iterator it = clients.begin(); it != clients.end(); ++it) {
+	// 	if (it->second->is(Client::Username) == target) {
+	// 		clients[client_fd]->sendMessage("Username already in use\r\n");
+	// 		return;
+	// 	}
+	// }
+	clients[client_fd]->set(Client::Username, "+", message);
 	clients[client_fd]->sendMessage("USER " + clients[client_fd]->is(Client::Username) + "\r\n");
-	(void)message;
+	(void)target;
 }
 
 void Server::handleJoin(int client_fd, const std::string& target, const std::string& message) {
@@ -195,8 +199,9 @@ void Server::handleJoin(int client_fd, const std::string& target, const std::str
 	}
 	if (channels.find(target) == channels.end()) {
 		channels[target] = new Channel(target);
-		channels[target]->broadcast("Channel created: " + target + "\r\n", client_fd);
+		channels[target]->broadcast("Channel created: " + message + "\r\n", client_fd);
 		clients[client_fd]->set(Client::Operator, "+", "operator");
+		clients[client_fd]->set(Client::InChannel, "+", "true");
 		clients[client_fd]->sendMessage("Now youer Channel operator\r\n");
 		channels[target]->broadcast("you have to Setting TOPIC\r\n", client_fd);
 	}
@@ -254,7 +259,7 @@ void Server::handleInvite(int client_fd, const std::string& target, const std::s
 	}
 	if (static_cast<long unsigned int>(std::strtod(channels[target]->is(Channel::limits).c_str(), NULL)) == clients.size() \
 		&& clients[client_fd]->is(Client::InChannel) == "true") {
-		channels[target]->ClientInOut("in", clients[clients->is(Client::Nickname)->getFd()]);
+		channels[target]->ClientInOut("in", clients[client_fd]);
 		clients[client_fd]->sendMessage("INVITE " + target + " " + message + "\r\n");
 	}
 }
@@ -272,11 +277,10 @@ void Server::handleMode(int client_fd, const std::string& target, const std::str
 	if (checkDefaultInfo(2, client_fd) == false) {
 		return;
 	}
-	Triple<std::string, int, std::string> opt;
-	opt = modeparse(message);
-	if (opt.second() == 0)
-		clients[client_fd]->set(Client::Operator, opt.first(), opt.third());
-	channels[target]->set(opt.second(), opt.first(), opt.third());
+	Triple<std::string, int, std::string> opt = modeparse(message);
+	if (opt.second == 0)
+		clients[client_fd]->set(Client::Operator, opt.first, opt.third);
+	channels[target]->set(opt.second, opt.first, opt.third);
 	clients[client_fd]->sendMessage("MODE " + target + " :" + message + "\r\n");
 	channels[target]->broadcast("MODE " + target + " :" + message + "\r\n", client_fd);
 }
@@ -288,7 +292,7 @@ void Server::handleQuit(int client_fd, const std::string& target, const std::str
 }
 
 Triple<std::string, int, std::string> Server::modeparse(std::string const &message) {
-	Triple<std::string, std::string, std::string> opt;
+	Triple<std::string, int, std::string> opt;
 	if (message[0] == '+') {
 		opt.first = "+";
 	} else if (message[0] == '-') {

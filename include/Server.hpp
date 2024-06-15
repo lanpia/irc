@@ -6,7 +6,7 @@
 /*   By: nahyulee <nahyulee@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/06/08 19:58:12 by nahyulee          #+#    #+#             */
-/*   Updated: 2024/06/15 18:37:49 by nahyulee         ###   ########.fr       */
+/*   Updated: 2024/06/15 19:13:27 by nahyulee         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -54,7 +54,7 @@ public:
 	void sendMessage(const std::string& message) const;
 	void disconnectClient(int client_fd);
 	void handleClientMessage(int client_fd);
-	Triple<std::string, std::string, std::string> modeparse(std::string const &message);
+	Triple<std::string, int, std::string> modeparse(std::string const &message);
 	bool checkDefaultInfo(int level, int client_fd);
 
 	void handleNick(int client_fd, const std::string& target, const std::string& message);

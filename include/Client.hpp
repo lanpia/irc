@@ -6,7 +6,7 @@
 /*   By: nahyulee <nahyulee@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/06/08 19:50:19 by nahyulee          #+#    #+#             */
-/*   Updated: 2024/06/15 18:13:42 by nahyulee         ###   ########.fr       */
+/*   Updated: 2024/06/15 19:15:35 by nahyulee         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,20 +21,14 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/socket.h>
-#include <sys/types.h> // ssize_t recv(int sockfd, void *buf, size_t len, int flags);
-
-// template <typename T1, typename T2>
-// struct Pair {
-//     T1 first;
-//     T2 second;
-//     Pair(const T1& f, const T2& s) : first(f), second(s) {}
-// };
+#include <sys/types.h>
 
 template <typename T1, typename T2, typename T3>
 struct Triple {
     T1 first;
     T2 second;
     T3 third;
+	Triple() {}
     Triple(const T1& f, const T2& s, const T3& t) : first(f), second(s), third(t) {}
 };
 
@@ -55,8 +49,8 @@ public:
     public:
         ClientException(const std::string& message) : std::runtime_error(message) {}
     };
-	void set(enum e_info idx, const std::string opt, const std::string& str);
-	std::string is(enum e_info idx) const;
+	void set(int idx, const std::string opt, const std::string& str);
+	std::string is(int idx) const;
 	int getFd() const;
 	bool isValidNickname(const std::string& nickname) const;
 	Triple<std::string, std::string, std::string> parseMessage();

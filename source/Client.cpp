@@ -6,7 +6,7 @@
 /*   By: nahyulee <nahyulee@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/06/08 19:50:01 by nahyulee          #+#    #+#             */
-/*   Updated: 2024/06/15 18:12:35 by nahyulee         ###   ########.fr       */
+/*   Updated: 2024/06/16 01:14:16 by nahyulee         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,41 +39,81 @@ int Client::getFd() const {
 	return this->fd;
 }
 
-std::string Client::is(enum e_info idx) const {
+std::string Client::is(int idx) const {
 	return this->ClientInfo[idx];
 }
 
-void Client::set(enum e_info idx, const std::string opt, const std::string& str) {
+void Client::set(int idx, const std::string opt, const std::string& str) {
 	if (opt == "+")
 		this->ClientInfo[idx] = str;
 	else if (opt == "-")
 		this->ClientInfo[idx] = "";
 }
 
+// Triple<std::string, std::string, std::string> Client::parseMessage() {
+//     char buf[513] = {0};
+// 	int len = recv(this->fd, buf, 512, 0);
+// 	if (len <= 0) {
+// 		throw Client::ClientException("Client disconnected");
+// 	}
+// 	buf[len] = '\0';
+// 	std::string buffer(buf);
+// 	if (buffer.size() == 512) {
+// 		throw Client::ClientException("Message too long");
+// 	}
+// 	if ((buffer.find("\r\n")) == std::string::npos) {
+// 		throw Client::ClientException("Message not complete");
+// 	}
+// 	std::string command, target, message;
+//     std::istringstream iss(buffer);
+//     iss >> command;
+//     std::getline(iss, target, ' ');
+	
+//     std::getline(iss, message);
+//     if (!message.empty() && message[0] == ' ') {
+//         message.erase(0, 1);
+//     }
+// 	message.erase(message.size() - 1);
+//     return Triple<std::string, std::string, std::string>(command, target, message);
+// }
 Triple<std::string, std::string, std::string> Client::parseMessage() {
-    char buf[513] = {0};
+	char buf[513] = {0};
 	int len = recv(this->fd, buf, 512, 0);
 	if (len <= 0) {
-		throw Client::ClientException("Client disconnected");
+		throw ClientException("Client disconnected");
 	}
 	buf[len] = '\0';
 	std::string buffer(buf);
 	if (buffer.size() == 512) {
-		throw Client::ClientException("Message too long");
+		throw ClientException("Message too long");
 	}
-	if ((buffer.find("\r\n")) == std::string::npos) {
-		throw Client::ClientException("Message not complete");
+	if (buffer.find("\r\n") == std::string::npos) {
+		throw ClientException("Message not complete");
 	}
-	std::string command, target, message;
-    std::istringstream iss(buffer);
-    iss >> command;
-    std::getline(iss, target, ' ');
-	
-    std::getline(iss, message);
-    if (!message.empty() && message[0] == ' ') {
-        message.erase(0, 1);
-    }
-    return Triple<std::string, std::string, std::string>(command, target, message);
+	std::istringstream iss(buffer);
+	std::string command;
+	std::string target;
+	std::string message;
+
+	iss >> command;
+
+	if (!(iss >> std::ws).eof()) {
+		if (iss.peek() == ':') {
+			iss.ignore();
+			std::getline(iss, target, ' ');
+		} else {
+			iss >> target;
+		}
+
+		if (!(iss >> std::ws).eof()) {
+			std::getline(iss, message, "\r\n"[0]);
+			if (!message.empty() && message[0] == ' ') {
+				message.erase(0, 1);
+			}
+		}
+	}
+	message.erase(message.find("\r\n"), 2);
+	return Triple<std::string, std::string, std::string>(command, target, message);
 }
 
 void Client::sendMessage(const std::string& message) const {
