@@ -6,7 +6,7 @@
 /*   By: nahyulee <nahyulee@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/06/08 19:58:05 by nahyulee          #+#    #+#             */
-/*   Updated: 2024/06/17 23:47:21 by nahyulee         ###   ########.fr       */
+/*   Updated: 2024/06/18 08:58:26 by nahyulee         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -101,27 +101,35 @@ void Server::disconnectClient(int client_fd) {
 }
 
 void Server::handleClientMessage(int client_fd) {
-    Triple<std::string, std::string, std::string> msg = this->clients[client_fd]->parseMessage();
-    std::map<std::string, void (Server::*)(int, const std::string&, const std::string&)> _commands;
+	Triple<std::string, std::string, std::string> msg = this->clients[client_fd]->parseMessage();
+	std::map<std::string, void (Server::*)(int, const std::string&, const std::string&)> _commands;
 	_commands["PASS"] = &Server::handlePass;
-    _commands["USER"] = &Server::handleUser;
-    _commands["NICK"] = &Server::handleNick;
-    _commands["JOIN"] = &Server::handleJoin;
-    _commands["PART"] = &Server::handlePart;
-    _commands["PRIVMSG"] = &Server::handlePrivmsg;
-    _commands["KICK"] = &Server::handleKick;
-    _commands["INVITE"] = &Server::handleInvite;
-    _commands["TOPIC"] = &Server::handleTopic;
-    _commands["MODE"] = &Server::handleMode;
-    _commands["QUIT"] = &Server::handleQuit;
+	_commands["USER"] = &Server::handleUser;
+	_commands["NICK"] = &Server::handleNick;
+	_commands["JOIN"] = &Server::handleJoin;
+	_commands["PART"] = &Server::handlePart;
+	_commands["PRIVMSG"] = &Server::handlePrivmsg;
+	_commands["KICK"] = &Server::handleKick;
+	_commands["INVITE"] = &Server::handleInvite;
+	_commands["TOPIC"] = &Server::handleTopic;
+	_commands["MODE"] = &Server::handleMode;
+	_commands["QUIT"] = &Server::handleQuit;
 
-    std::map<std::string, void (Server::*)(int, const std::string&, const std::string&)>::iterator it = _commands.find(msg.first);
-    if (it != _commands.end()) {
-        (this->*(it->second))(client_fd, msg.second, msg.third);
-    } else {
-        clients[client_fd]->sendMessage("Unknown command: " + msg.first + " " + msg.second + " " + msg.second);
-    }
+	std::map<std::string, void (Server::*)(int, const std::string&, const std::string&)>::iterator it = _commands.find(msg.first);
+	if (it != _commands.end()) {
+		(this->*(it->second))(client_fd, msg.second, msg.third);
+	} else {
+		clients[client_fd]->sendMessage("Unknown command: " + msg.first + " " + msg.second + " " + msg.second);
+	}
 }
+
+	// } catch (const Client::ClientException& e) {
+    //     std::cerr << "Error: " << e.what() << " with response code: " << e.responseCode << std::endl;
+    // } catch (const Channel::ChannelException& e) {
+    //     std::cerr << "Error: " << e.what() << " with response code: " << e.responseCode << std::endl;
+    // } catch (const Server::ServerException& e) {
+    //     std::cerr << "Error: " << e.what() << " with response code: " << e.responseCode << std::endl;
+    // }
 
 int Server::findClientFd(const std::string& target) {
 	for (std::map<int, Client*>::iterator it = clients.begin(); it != clients.end(); ++it) {

@@ -6,7 +6,7 @@
 /*   By: nahyulee <nahyulee@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/06/08 19:50:19 by nahyulee          #+#    #+#             */
-/*   Updated: 2024/06/17 22:56:07 by nahyulee         ###   ########.fr       */
+/*   Updated: 2024/06/18 08:57:34 by nahyulee         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -56,6 +56,7 @@ public:
 	bool isValidNickname(const std::string& nickname) const;
 	bool checkDefaultInfo(int level) const;
 	void sendMessage(const std::string& message) const;
+	void responseMessage(std::string code) const;
 	Triple<std::string, std::string, std::string> parseMessage();
 	Triple<int, std::string, std::string> MODEparse(const std::string& message);
 };

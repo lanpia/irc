@@ -6,7 +6,7 @@
 /*   By: nahyulee <nahyulee@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/06/14 01:38:18 by nahyulee          #+#    #+#             */
-/*   Updated: 2024/06/14 01:38:19 by nahyulee         ###   ########.fr       */
+/*   Updated: 2024/06/17 23:59:07 by nahyulee         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,6 +26,5 @@ int main(int argc, char* argv[]) {
 		std::cerr << "Error: " << e.what() << std::endl;
 		return 1;
 	}
-
 	return 0;
 }
