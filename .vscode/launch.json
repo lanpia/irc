@@ -31,7 +31,7 @@
 		"program": "${workspaceFolder}/ircserv",
 		"args": [
 			"4000",
-			"mypasswd"
+			"my"
 		],
 		"cwd": "${workspaceFolder}",
 		"preLaunchTask": "build",

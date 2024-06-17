@@ -6,7 +6,7 @@
 /*   By: nahyulee <nahyulee@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/06/08 19:58:05 by nahyulee          #+#    #+#             */
-/*   Updated: 2024/06/16 01:17:08 by nahyulee         ###   ########.fr       */
+/*   Updated: 2024/06/17 23:47:21 by nahyulee         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -88,45 +88,22 @@ void Server::acceptNewClient() {
 	}
 	fcntl(new_socket, F_SETFL, O_NONBLOCK);
 	clients[new_socket] = new Client(new_socket);
-	if (password.length() > 0) {
-		clients[new_socket]->sendMessage("Enter password: ");
-		
-	}
-	Triple<std::string, std::string, std::string> msg;
-	msg = this->clients[new_socket]->parseMessage();
-	if (msg.first == "PASS") {
-		if (msg.third == password) {
-				clients[new_socket]->sendMessage("Authentication successful!\n");
-			} else {
-				clients[new_socket]->sendMessage("Authentication failed!\n");
-				close(new_socket);
-				delete clients[new_socket];
-				clients.erase(new_socket);
-				return;
-			}
-	} else if (new_socket == 0) {
-        close(new_socket);
-        delete clients[new_socket];
-        clients.erase(new_socket);
-        std::cout << "Client disconnected: " << new_socket << std::endl;
-    }
 	std::cout << "New client connected: " << new_socket << std::endl;
-}
-
-void Server::sendMessage(const std::string& message) const {
-	send(svrFd, message.c_str(), message.size(), 0);
+	if (password.length() > 0)
+		clients[new_socket]->sendMessage("Enter password");
 }
 
 void Server::disconnectClient(int client_fd) {
 	std::cout << "Client disconnected: " << client_fd << std::endl;
-	channels[clients[client_fd]->is(Client::Nickname)]->ClientInOut("out", clients[client_fd]);
 	close(client_fd);
 	delete clients[client_fd];
 	clients.erase(client_fd);
 }
+
 void Server::handleClientMessage(int client_fd) {
     Triple<std::string, std::string, std::string> msg = this->clients[client_fd]->parseMessage();
     std::map<std::string, void (Server::*)(int, const std::string&, const std::string&)> _commands;
+	_commands["PASS"] = &Server::handlePass;
     _commands["USER"] = &Server::handleUser;
     _commands["NICK"] = &Server::handleNick;
     _commands["JOIN"] = &Server::handleJoin;
@@ -142,173 +119,185 @@ void Server::handleClientMessage(int client_fd) {
     if (it != _commands.end()) {
         (this->*(it->second))(client_fd, msg.second, msg.third);
     } else {
-        clients[client_fd]->sendMessage("Unknown command: " + msg.second + " " + msg.third + "\r\n");
+        clients[client_fd]->sendMessage("Unknown command: " + msg.first + " " + msg.second + " " + msg.second);
     }
 }
 
-bool Server::checkDefaultInfo(int level, int client_fd) {
-    if (clients[client_fd]->is(Client::Nickname).empty() || clients[client_fd]->is(Client::Username).empty()) {
-        clients[client_fd]->sendMessage("You have to set nickname and username\r\n");
-        return false;
-    }
-    if (level >= 1) {
-        if (clients[client_fd]->is(Client::InChannel).empty()) {
-            clients[client_fd]->sendMessage("You are not in the channels\r\n");
-            return false;
-        }
-    }
-    if (level == 2) {
-        if (clients[client_fd]->is(Client::Operator) == "operator") {
-			clients[client_fd]->sendMessage("You are not operator\r\n");
-            return false;
-        }
-    }
-    return true;
+int Server::findClientFd(const std::string& target) {
+	for (std::map<int, Client*>::iterator it = clients.begin(); it != clients.end(); ++it) {
+		if (it->second->is(Client::Nickname) == target) {
+			return it->first;
+		}
+	}
+	return -1;
+}
+
+void Server::handlePass(int client_fd, const std::string& target, const std::string& message) {
+	if (target == password) {
+		clients[client_fd]->sendMessage("Authentication successful!\nNow you have to set the Nickname, Username");
+	} else {
+		clients[client_fd]->sendMessage("Authentication failed!");
+		disconnectClient(client_fd);
+	} 
+	if (client_fd == 0) {
+		disconnectClient(client_fd);
+		std::cout << "Client disconnected: " << client_fd << std::endl;
+	}
+	(void)message;
 }
 
 void Server::handleNick(int client_fd, const std::string& target, const std::string& message) {
 	for (std::map<int, Client*>::const_iterator it = clients.begin(); it != clients.end(); ++it) {
-		if (it->second->is(Client::Nickname) == message) {
-			clients[client_fd]->sendMessage("Nickname already in use\r\n");
+		if (it->second->is(Client::Nickname) == target) {
+			clients[client_fd]->sendMessage("Nickname already in use");
 			return;
 		}
 	}
-	if (clients[client_fd]->isValidNickname(target)) {
-		clients[client_fd]->sendMessage("Invalid nickname\r\n");
+	if (clients[client_fd]->isValidNickname(target) == false) {
 		return;
 	}
-	clients[client_fd]->set(Client::Nickname, "+", message);
-	clients[client_fd]->sendMessage("NICK " + clients[client_fd]->is(Client::Nickname) + "\r\n");
+	clients[client_fd]->set(Client::Nickname, "+", target);
+	(void)message;
 }
 
 void Server::handleUser(int client_fd, const std::string& target, const std::string& message) {
-	// for (std::map<int, Client*>::const_iterator it = clients.begin(); it != clients.end(); ++it) {
-	// 	if (it->second->is(Client::Username) == target) {
-	// 		clients[client_fd]->sendMessage("Username already in use\r\n");
-	// 		return;
-	// 	}
-	// }
-	clients[client_fd]->set(Client::Username, "+", message);
-	clients[client_fd]->sendMessage("USER " + clients[client_fd]->is(Client::Username) + "\r\n");
-	(void)target;
+	if (clients[client_fd]->isValidNickname(target) == false) {
+		return;
+	}
+	clients[client_fd]->set(Client::Username, "+", target);
+	(void)message;
 }
 
 void Server::handleJoin(int client_fd, const std::string& target, const std::string& message) {
-	if (checkDefaultInfo(0, client_fd) == false) {
+	if (clients[client_fd]->checkDefaultInfo(0) == false) {
 		return;
 	}
 	if (channels.find(target) == channels.end()) {
 		channels[target] = new Channel(target);
-		channels[target]->broadcast("Channel created: " + message + "\r\n", client_fd);
+		channels[target]->broadcast("Channel created: " + target, client_fd);
 		clients[client_fd]->set(Client::Operator, "+", "operator");
-		clients[client_fd]->set(Client::InChannel, "+", "true");
-		clients[client_fd]->sendMessage("Now youer Channel operator\r\n");
-		channels[target]->broadcast("you have to Setting TOPIC\r\n", client_fd);
 	}
 	if (channels[target]->is(Channel::inviteOnly) == "true" \
 		&& static_cast<long unsigned int>(std::strtod(channels[target]->is(Channel::limits).c_str(), NULL)) == clients.size() \
-		&& clients[client_fd]->is(Client::InChannel) == "true") {
-		clients[client_fd]->sendMessage("JOIN fail\r\n");
+		&& clients[client_fd]->is(Client::Chatname) == "true") {
+		clients[client_fd]->sendMessage("JOIN fail");
 		return ;
 	}
 	if (channels[target]->is(Channel::passwd).empty() == false && channels[target]->is(Channel::passwd) != message) {
-		clients[client_fd]->sendMessage("JOIN fail\r\n");
+		clients[client_fd]->sendMessage("JOIN fail");
 		return ;
 	}
+	clients[client_fd]->set(Client::Chatname, "+", target);
 	channels[target]->ClientInOut("in", clients[client_fd]);
-	clients[client_fd]->sendMessage("JOIN " + channels[target]->is(Channel::chatname) + "\r\n");
-	channels[target]->broadcast(clients[client_fd]->is(Client::Nickname) + " has joined the channes\r\n", client_fd);
 }
 
 void Server::handlePart(int client_fd, const std::string& target, const std::string& message) {
 	if (channels.find(target) != channels.end()) {
 		channels[target]->ClientInOut("out", clients[client_fd]);
-		clients[client_fd]->sendMessage("PART " + target + "\r\n");
-		channels[target]->broadcast(clients[client_fd]->is(Client::Nickname) + " has left the channes\r\n", client_fd);
+		clients[client_fd]->set(Client::Operator, "-", "");
+		clients[client_fd]->set(Client::Chatname, "-", "");
+	}
+	if (channels[target]->LastOperator() == true) {
+		channels[target]->broadcast("Channel deleted: " + target, client_fd);
+		for (std::set<Client*>::iterator it = channels[target]->getClients().begin(); it != channels[target]->getClients().end(); ++it) {
+			(*it)->set(Client::Chatname, "-", "");
+		}
+		delete channels[target];
+		channels.erase(target);
+	}
+	if (channels[target]->emptyClient() == true) {
+		delete channels[target];
+		channels.erase(target);
 	}
 	(void)message;
 }
 
 void Server::handlePrivmsg(int client_fd, const std::string& target, const std::string& message) {
 	if (target[0] == '#') {
-		if (checkDefaultInfo(1, client_fd) == false) {
+		if (clients[client_fd]->checkDefaultInfo(1) == false) {
 			return;
 		}
-		channels[target]->broadcast("PRIVMSG " + target + " :" + clients[client_fd]->is(Client::Nickname) + ": " + message + "\r\n", client_fd);
+		if (channels.find(target) == channels.end()) {
+			clients[client_fd]->sendMessage("Channel not found");
+			return;
+		}
+		channels[target]->broadcast("PRIVMSG " + target + " :" + clients[client_fd]->is(Client::Nickname) + ": " + message, client_fd);
 	} else {
 		for (std::map<int, Client*>::iterator it = clients.begin(); it != clients.end(); ++it) {
 			if (it->second->is(Client::Nickname) == target) {
-				clients[client_fd]->sendMessage("PRIVMSG " + target + " :" + clients[client_fd]->is(Client::Nickname) + ": " + message + "\r\n");
+				clients[it->second->getFd()]->sendMessage("PRIVMSG " + target + " :" + clients[client_fd]->is(Client::Nickname) + ": " + message);
 			}
 		}
 	}
 }
 
 void Server::handleKick(int client_fd, const std::string& target, const std::string& message) {
-	if (checkDefaultInfo(2, client_fd) == false) {
+	if (clients[client_fd]->checkDefaultInfo(2) == false) {
 		return;
 	}
-	channels[target]->ClientInOut("out", clients[client_fd]);
-	clients[client_fd]->sendMessage("KICK " + target + " " + message + "\r\n");
-	channels[target]->broadcast(target + " has been kicked from the channes\r\n", client_fd);
+	int target_fd = findClientFd(message);
+	if (target_fd == -1) {
+		clients[client_fd]->sendMessage("Client not found");
+		return;
+	} else if (client_fd == target_fd) {
+		clients[client_fd]->sendMessage("You can't kick yourself");
+		return;
+	} else {
+		channels[target]->ClientInOut("out", clients[client_fd]);
+		clients[target_fd]->set(Client::Operator, "-", "");
+		clients[target_fd]->set(Client::Chatname, "-", "");
+	}
 }
 
 void Server::handleInvite(int client_fd, const std::string& target, const std::string& message) {
-	if (checkDefaultInfo(2, client_fd) == false) {
+	if (clients[client_fd]->checkDefaultInfo(2) == false) {
 		return;
 	}
-	if (static_cast<long unsigned int>(std::strtod(channels[target]->is(Channel::limits).c_str(), NULL)) == clients.size() \
-		&& clients[client_fd]->is(Client::InChannel) == "true") {
-		channels[target]->ClientInOut("in", clients[client_fd]);
-		clients[client_fd]->sendMessage("INVITE " + target + " " + message + "\r\n");
+	int target_fd = findClientFd(message);
+	if (target_fd == -1) {
+		clients[client_fd]->sendMessage("Client not found");
+		return;
+	} else if (client_fd == target_fd) {
+		clients[client_fd]->sendMessage("You can't Invite yourself");
+		return;
+	} else {
+		if (static_cast<long unsigned int>(std::strtod(channels[target]->is(Channel::limits).c_str(), NULL)) == clients.size() \
+			&& clients[target_fd]->is(Client::Chatname).empty()) {
+			clients[target_fd]->set(Client::Chatname, "+", target);
+			clients[target_fd]->sendMessage("INVITE " + target + " " + message);
+			channels[target]->ClientInOut("in", clients[target_fd]);
+		}
 	}
 }
 
 void Server::handleTopic(int client_fd, const std::string& target, const std::string& message) {
-	if (checkDefaultInfo(2, client_fd) == false) {
+	if (clients[client_fd]->checkDefaultInfo(2) == false) {
 		return;
 	}
 	channels[target]->set(Channel::topic, "+", message);
-	clients[client_fd]->sendMessage("TOPIC " + target + " :" + message + "\r\n");
-	channels[target]->broadcast("TOPIC " + target + " :" + message + "\r\n", client_fd);
+	clients[client_fd]->sendMessage("TOPIC " + target + " :" + message);
+	channels[target]->broadcast("TOPIC " + target + " :" + message, client_fd);
 }
 
 void Server::handleMode(int client_fd, const std::string& target, const std::string& message) {
-	if (checkDefaultInfo(2, client_fd) == false) {
+	if (clients[client_fd]->checkDefaultInfo(2) == false) {
 		return;
+	} else if (clients[client_fd]->is(Client::Chatname) != target) {
+		clients[client_fd]->sendMessage("Channelname Error");
+		return ;
 	}
-	Triple<std::string, int, std::string> opt = modeparse(message);
-	if (opt.second == 0)
-		clients[client_fd]->set(Client::Operator, opt.first, opt.third);
-	channels[target]->set(opt.second, opt.first, opt.third);
-	clients[client_fd]->sendMessage("MODE " + target + " :" + message + "\r\n");
-	channels[target]->broadcast("MODE " + target + " :" + message + "\r\n", client_fd);
+	Triple<int, std::string, std::string> opt = clients[client_fd]->MODEparse(message);
+	if (opt.first == 0) {
+		clients[findClientFd(opt.third)]->set(Client::Operator, opt.second, "operator");
+	} else {
+		channels[target]->set(opt.first, opt.second, opt.third);
+	}
+	channels[target]->broadcast("MODE " + target + " :" + message, client_fd);
 }
 
 void Server::handleQuit(int client_fd, const std::string& target, const std::string& message) {
 	(void)target;
 	(void)message;
+	clients[client_fd]->sendMessage("QUIT the server");
 	disconnectClient(client_fd);
-}
-
-Triple<std::string, int, std::string> Server::modeparse(std::string const &message) {
-	Triple<std::string, int, std::string> opt;
-	if (message[0] == '+') {
-		opt.first = "+";
-	} else if (message[0] == '-') {
-		opt.first = "-";
-	}
-	if (message[1] == 'o') {
-		opt.second = 0;
-	} else if (message[1] == 't') {
-		opt.second = 1;
-	} else if (message[1] == 'l') {
-		opt.second = 2;
-	} else if (message[1] == 'k') {
-		opt.second = 3;
-	} else if (message[1] == 'i') {
-		opt.second = 4;
-	}
-	opt.third = message.substr(2);
-	return opt;
 }

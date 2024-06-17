@@ -6,7 +6,7 @@
 /*   By: nahyulee <nahyulee@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/06/08 19:58:12 by nahyulee          #+#    #+#             */
-/*   Updated: 2024/06/15 19:13:27 by nahyulee         ###   ########.fr       */
+/*   Updated: 2024/06/17 22:56:01 by nahyulee         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -48,15 +48,15 @@ public:
 	Server(int port, const std::string& password);
 	class ServerException : public std::runtime_error {
     public:
-        ServerException(const std::string& message) : std::runtime_error(message) {}
+        explicit ServerException(const std::string& message) : std::runtime_error(message) {}
+		virtual ~ServerException() throw() {}
     };
 	void ServerRun();
-	void sendMessage(const std::string& message) const;
 	void disconnectClient(int client_fd);
 	void handleClientMessage(int client_fd);
-	Triple<std::string, int, std::string> modeparse(std::string const &message);
-	bool checkDefaultInfo(int level, int client_fd);
+	int findClientFd(const std::string& target);
 
+	void handlePass(int client_fd, const std::string& target, const std::string& message);
 	void handleNick(int client_fd, const std::string& target, const std::string& message);
 	void handleUser(int client_fd, const std::string& target, const std::string& message);
 	void handleJoin(int client_fd, const std::string& target, const std::string& message);

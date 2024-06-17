@@ -1,0 +1,30 @@
+// :<서버 이름> <응답 코드> <대상 사용자> :<메시지 내용>
+	_responseCode["001"] = ":Welcome to the Internet Relay Network ";
+	_responseCode["002"] = ":Your host is ";
+	_responseCode["003"] = ":This server was created ";
+	_responseCode["253"] = ":unknown connection(s)";
+	_responseCode["332"] = " :No topic is set";
+	_responseCode["401"] = " :No such nick/channel";
+	_responseCode["402"] = " :No such server";
+	_responseCode["403"] = " :No such channel";
+	_responseCode["405"] = " :You have joined too many channels";
+	_responseCode["406"] = " :There was no such nickname";
+	_responseCode["409"] = " :No origin specified";
+	_responseCode["411"] = " :No recipient given";
+	_responseCode["421"] = " :Unknown command";
+	_responseCode["422"] = " :MOTD File is missing";
+	_responseCode["432"] = " :Erroneous nickname";
+	_responseCode["433"] = " :Nickname is already in use";
+	_responseCode["442"] = " :You're not on that channel";
+	_responseCode["443"] = " :is already on channel";
+	_responseCode["461"] = " :Not enough parameters";
+	_responseCode["464"] = " :Password incorrect";
+	
+	_responseCode["472"] = " :is unknown mode char to me";
+	_responseCode["481"] = " :Permission Denied- You're not an IRC operator";
+	_responseCode["483"] = " :You cant kill a server";
+	_responseCode["501"] = " :Unknown MODE flag";
+	_responseCode["502"] = " :Cannot change mode for other users";
+	_responseCode["504"] = " :Cannot kill server";
+	_responseCode["511"] = " :Channel doesn't exist";
+	_responseCode["513"] = " :is already registered";

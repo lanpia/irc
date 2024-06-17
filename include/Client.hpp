@@ -6,7 +6,7 @@
 /*   By: nahyulee <nahyulee@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/06/08 19:50:19 by nahyulee          #+#    #+#             */
-/*   Updated: 2024/06/15 19:15:35 by nahyulee         ###   ########.fr       */
+/*   Updated: 2024/06/17 22:56:07 by nahyulee         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -42,19 +42,22 @@ private:
 	std::string ClientInfo[4];
 
 public:
-	enum e_info{Nickname, Username, InChannel, Operator};
+	enum e_info{Nickname, Username, Chatname, Operator};
 	Client(int fd);
 	~Client();
 	class ClientException : public std::runtime_error {
     public:
-        ClientException(const std::string& message) : std::runtime_error(message) {}
+        explicit ClientException(const std::string& message) : std::runtime_error(message) {}
+		virtual ~ClientException() throw() {}
     };
 	void set(int idx, const std::string opt, const std::string& str);
 	std::string is(int idx) const;
 	int getFd() const;
 	bool isValidNickname(const std::string& nickname) const;
-	Triple<std::string, std::string, std::string> parseMessage();
+	bool checkDefaultInfo(int level) const;
 	void sendMessage(const std::string& message) const;
+	Triple<std::string, std::string, std::string> parseMessage();
+	Triple<int, std::string, std::string> MODEparse(const std::string& message);
 };
 
 #endif
