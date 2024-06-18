@@ -6,7 +6,7 @@
 /*   By: nahyulee <nahyulee@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/06/08 19:58:05 by nahyulee          #+#    #+#             */
-/*   Updated: 2024/06/18 08:58:26 by nahyulee         ###   ########.fr       */
+/*   Updated: 2024/06/18 09:00:05 by nahyulee         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -205,18 +205,18 @@ void Server::handlePart(int client_fd, const std::string& target, const std::str
 		clients[client_fd]->set(Client::Operator, "-", "");
 		clients[client_fd]->set(Client::Chatname, "-", "");
 	}
-	if (channels[target]->LastOperator() == true) {
-		channels[target]->broadcast("Channel deleted: " + target, client_fd);
-		for (std::set<Client*>::iterator it = channels[target]->getClients().begin(); it != channels[target]->getClients().end(); ++it) {
-			(*it)->set(Client::Chatname, "-", "");
-		}
-		delete channels[target];
-		channels.erase(target);
-	}
-	if (channels[target]->emptyClient() == true) {
-		delete channels[target];
-		channels.erase(target);
-	}
+	// if (channels[target]->LastOperator() == true) {
+	// 	channels[target]->broadcast("Channel deleted: " + target, client_fd);
+	// 	for (std::set<Client*>::iterator it = channels[target]->getClients().begin(); it != channels[target]->getClients().end(); ++it) {
+	// 		(*it)->set(Client::Chatname, "-", "");
+	// 	}
+	// 	delete channels[target];
+	// 	channels.erase(target);
+	// }
+	// if (channels[target]->emptyClient() == true) {
+	// 	delete channels[target];
+	// 	channels.erase(target);
+	// }
 	(void)message;
 }
 
