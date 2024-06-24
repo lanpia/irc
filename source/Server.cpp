@@ -6,7 +6,7 @@
 /*   By: nahyulee <nahyulee@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/06/08 19:58:05 by nahyulee          #+#    #+#             */
-/*   Updated: 2024/06/24 23:09:17 by nahyulee         ###   ########.fr       */
+/*   Updated: 2024/06/24 23:25:18 by nahyulee         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -266,14 +266,14 @@ void Server::handleInvite(int client_fd, const std::string& target, const std::s
 		return;
 	} else {
 		if (channels[target]->is(Channel::passwd).empty() == false && channels[target]->is(Channel::passwd) != message) {
-			clients[client_fd]->sendMessage("Invite fail");
+			clients[target_fd]->sendMessage("Invite fail");
 			return ;
 		}
 		if (channels[target]->is(Channel::passwd).empty() == false && channels[target]->is(Channel::passwd) != message) {
-			clients[client_fd]->sendMessage("Invite fail, passwd error");
+			clients[target_fd]->sendMessage("Invite fail, passwd error");
 			return ;
 		} else if (channels[target]->is(Channel::passwd).empty() == false && channels[target]->is(Channel::passwd) == message) {
-			clients[client_fd]->sendMessage("PASSWORD OK");
+			clients[target_fd]->sendMessage("PASSWORD OK");
 		}
 		if (static_cast<long unsigned int>(std::strtod(channels[target]->is(Channel::limits).c_str(), NULL)) == clients.size() \
 			&& clients[target_fd]->is(Client::Chatname).empty()) {
