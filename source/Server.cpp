@@ -6,7 +6,7 @@
 /*   By: nahyulee <nahyulee@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/06/08 19:58:05 by nahyulee          #+#    #+#             */
-/*   Updated: 2024/06/25 04:35:02 by nahyulee         ###   ########.fr       */
+/*   Updated: 2024/06/25 04:36:02 by nahyulee         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -288,7 +288,10 @@ void Server::handleInvite(int client_fd, const std::string& target, const std::s
 
 // message가 비어있으면 segv
 void Server::handleTopic(int client_fd, const std::string& target, const std::string& message) {
-	if (message.empty() == true) {
+	if (channels.find(target) == channels.end()) {
+		clients[client_fd]->sendMessage("Channel not found");
+		return;
+	} else	if (message.empty() == true) {
 		clients[client_fd]->sendMessage(clients[client_fd]->is(Client::Chatname) + " : " + channels[target]->is(Channel::topic));
 		return;
 	} else {
