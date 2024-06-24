@@ -6,7 +6,7 @@
 /*   By: nahyulee <nahyulee@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/06/08 19:58:05 by nahyulee          #+#    #+#             */
-/*   Updated: 2024/06/25 00:29:30 by nahyulee         ###   ########.fr       */
+/*   Updated: 2024/06/25 04:35:02 by nahyulee         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,7 +29,7 @@ Server::~Server() {
 	}
 }
 
-Server::Server(int port, const std::string& password) : port(port), password(password) {
+Server::Server(int port, const std::string& password) : password(password) {
 	svrFd = socket(AF_INET, SOCK_STREAM, 0);
 	if (svrFd == -1) {
 		throw ServerException("Failed to create socket");
@@ -199,23 +199,23 @@ void Server::handleJoin(int client_fd, const std::string& target, const std::str
 }
 
 void Server::handlePart(int client_fd, const std::string& target, const std::string& message) {
-	(void)message;
 	if (channels.find(target) != channels.end() && clients[client_fd] != channels[target]->getFirstOperator()) {
 		channels[target]->ClientInOut("out", clients[client_fd]);
 		clients[client_fd]->set(Client::Operator, "-", "");
 		clients[client_fd]->set(Client::Chatname, "-", "");
 	} else if (channels.find(target) != channels.end() && clients[client_fd] == channels[target]->getFirstOperator()) {
 		channels[target]->broadcast("Channel deleted: " + target);
-		for (std::set<Client*>::iterator it = channels[target]->getClients().begin(); it != channels[target]->getClients().end(); ++it) {
+		std::set<Client*> clients = channels[target]->getClients(); // getClients의 반환 값을 복사
+		for (std::set<Client*>::iterator it = clients.begin(); it != clients.end(); ++it) {
 			(*it)->set(Client::Chatname, "-", "");
 			(*it)->set(Client::Operator, "-", "");
 			channels[target]->ClientInOut("out", *it);
 		}
 		channels[target]->setFirstOperator(NULL);
-		// channels[target] = NULL;
+		delete channels[target];
 		channels.erase(target);
-		clients[client_fd]->sendMessage("Channel deleted: " + target);
 	}
+	(void)message;
 }
 
 void Server::handlePrivmsg(int client_fd, const std::string& target, const std::string& message) {
@@ -284,8 +284,9 @@ void Server::handleInvite(int client_fd, const std::string& target, const std::s
 			channels[target]->ClientInOut("in", clients[target_fd]);
 		}
 	}
-}
+}	//초대 안됨
 
+// message가 비어있으면 segv
 void Server::handleTopic(int client_fd, const std::string& target, const std::string& message) {
 	if (message.empty() == true) {
 		clients[client_fd]->sendMessage(clients[client_fd]->is(Client::Chatname) + " : " + channels[target]->is(Channel::topic));

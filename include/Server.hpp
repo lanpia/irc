@@ -6,7 +6,7 @@
 /*   By: nahyulee <nahyulee@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/06/08 19:58:12 by nahyulee          #+#    #+#             */
-/*   Updated: 2024/06/17 22:56:01 by nahyulee         ###   ########.fr       */
+/*   Updated: 2024/06/25 04:32:41 by nahyulee         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,8 +35,8 @@ private:
 	Server& operator=(const Server& copy);
 	
 	int svrFd;
-	int sockets;
-	int port;
+	// int sockets;
+	// int port;
 	std::string password;
 	struct sockaddr_in _address;
 	std::map<int, Client*> clients;
