@@ -1,4 +1,8 @@
 # 과제요구사항
+INVITE
+클라이언트를 채널에 초대합니다.
+형식: INVITE <nickname> <channel>
+이거하기
 ## 채널
 KICK - Eject a client from the channel
 INVITE - Invite a client to a channel
