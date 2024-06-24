@@ -6,7 +6,7 @@
 /*   By: nahyulee <nahyulee@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/06/08 19:58:05 by nahyulee          #+#    #+#             */
-/*   Updated: 2024/06/25 04:36:02 by nahyulee         ###   ########.fr       */
+/*   Updated: 2024/06/25 05:47:28 by nahyulee         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,7 +32,7 @@ Server::~Server() {
 Server::Server(int port, const std::string& password) : password(password) {
 	svrFd = socket(AF_INET, SOCK_STREAM, 0);
 	if (svrFd == -1) {
-		throw ServerException("Failed to create socket");
+		throw std::runtime_error("Failed to create socket");
 	}
 	int opt = 1;
 	if (setsockopt(svrFd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
@@ -116,11 +116,15 @@ void Server::handleClientMessage(int client_fd) {
 	_commands["MODE"] = &Server::handleMode;
 	_commands["QUIT"] = &Server::handleQuit;
 
-	std::map<std::string, void (Server::*)(int, const std::string&, const std::string&)>::iterator it = _commands.find(msg.first);
-	if (it != _commands.end()) {
-		(this->*(it->second))(client_fd, msg.second, msg.third);
-	} else {
-		clients[client_fd]->sendMessage("Unknown command: " + msg.first + " " + msg.second + " " + msg.second);
+	try {
+		std::map<std::string, void (Server::*)(int, const std::string&, const std::string&)>::iterator it = _commands.find(msg.first);
+		if (it != _commands.end()) {
+			(this->*(it->second))(client_fd, msg.second, msg.third);
+		} else {
+			clients[client_fd]->sendMessage("Unknown command: " + msg.first + " " + msg.second + " " + msg.second);
+		}
+	} catch (std::exception& e) {
+		clients[client_fd]->sendMessage(e.what());
 	}
 }
 
@@ -249,7 +253,7 @@ void Server::handleKick(int client_fd, const std::string& target, const std::str
 		clients[client_fd]->sendMessage("You can't kick yourself");
 		return;
 	} else {
-		channels[target]->ClientInOut("out", clients[client_fd]);
+		channels[target]->ClientInOut("out", clients[target_fd]);
 		clients[target_fd]->set(Client::Operator, "-", "");
 		clients[target_fd]->set(Client::Chatname, "-", "");
 	}
@@ -267,31 +271,30 @@ void Server::handleInvite(int client_fd, const std::string& target, const std::s
 		clients[client_fd]->sendMessage("You can't Invite yourself");
 		return;
 	} else {
-		// if (channels[target]->is(Channel::passwd).empty() == false && channels[target]->is(Channel::passwd) != message) {
-		// 	clients[target_fd]->sendMessage("Invite fail");
-		// 	return ;
-		// }
-		// if (channels[target]->is(Channel::passwd).empty() == false && channels[target]->is(Channel::passwd) != message) {
-		// 	clients[target_fd]->sendMessage("Invite fail, passwd error");
-		// 	return ;
-		// } else if (channels[target]->is(Channel::passwd).empty() == false && channels[target]->is(Channel::passwd) == message) {
-		// 	clients[target_fd]->sendMessage("PASSWORD OK");
-		// }
-		if (static_cast<long unsigned int>(std::strtod(channels[target]->is(Channel::limits).c_str(), NULL)) == clients.size() \
+		if (channels[target]->is(Channel::limits).empty() == false && (std::atoi(channels[target]->is(Channel::limits).c_str())) == static_cast<int>(clients.size()) \
 			&& clients[target_fd]->is(Client::Chatname).empty()) {
 			clients[target_fd]->set(Client::Chatname, "+", target);
 			clients[target_fd]->sendMessage("INVITE " + target + " " + message);
 			channels[target]->ClientInOut("in", clients[target_fd]);
+		} else if (channels[target]->is(Channel::limits).empty() == true) {
+			clients[target_fd]->set(Client::Chatname, "+", target);
+			clients[target_fd]->sendMessage("INVITE " + target + " " + message);
+			channels[target]->ClientInOut("in", clients[target_fd]);
+		} else {
+			clients[client_fd]->sendMessage("Channel is full");
 		}
 	}
-}	//초대 안됨
+}
 
-// message가 비어있으면 segv
 void Server::handleTopic(int client_fd, const std::string& target, const std::string& message) {
 	if (channels.find(target) == channels.end()) {
 		clients[client_fd]->sendMessage("Channel not found");
 		return;
 	} else	if (message.empty() == true) {
+		if (channels[target]->is(Channel::topic).empty() == true) {
+			clients[client_fd]->sendMessage("No topic is set");
+			return;
+		}
 		clients[client_fd]->sendMessage(clients[client_fd]->is(Client::Chatname) + " : " + channels[target]->is(Channel::topic));
 		return;
 	} else {
@@ -310,38 +313,18 @@ void Server::handleMode(int client_fd, const std::string& target, const std::str
 		clients[client_fd]->sendMessage("Channelname Error");
 		return ;
 	}
-	
-	std::cout << "\033[0;32m";
-	std::cout << "target: " << target << std::endl;
-	std::cout << "message: " << message << std::endl;
-	
 	std::vector<std::string> token = clients[client_fd]->MODEcount(message);
-
-
 	char sign = *(token.front().begin());
 	if (sign != '+' && sign != '-') {
-		throw std::runtime_error("sign error");
+		clients[client_fd]->sendMessage("MODE sign error");
+		return ;
 	}
 	token.front().erase(token.front().begin());
-
-	std::cout << "sign: " << sign << std::endl;
-
 	do {
-
-		
-		for (std::vector<std::string>::iterator it = token.begin(); it != token.end(); ++it) {
-			std::cout << "token: " << *it << std::endl;
-		}
-		std::cout << "token size " << token.size() << std::endl;
-	
 		char mode = *(token.front().end() - 1);
-		std::cout << "mode: " << mode << std::endl;
 		token.front().erase(token.front().end() - 1);
 		Triple<int, std::string, std::string> opt = clients[client_fd]->MODEparse(mode, &token);
 		opt.second = sign;
-		
-		std::cout << "opt.first: " << opt.first << " opt.second: " << opt.second <<  " opt.third: " << opt.third << std::endl;
-
 		if (opt.first == 0) {
 			if (findClientFd(opt.third) == channels[target]->getFirstOperator()->getFd()) {
 				clients[client_fd]->sendMessage("You are the first operator");
@@ -349,12 +332,13 @@ void Server::handleMode(int client_fd, const std::string& target, const std::str
 			}
 			clients[findClientFd(opt.third)]->set(Client::Operator, opt.second, "operator");
 		} else {
+			if (opt.first == 2 && opt.second == "+" && channels[target]->getClients().size() > static_cast<long unsigned int>(std::atoi(opt.third.c_str()))) {
+				clients[client_fd]->sendMessage("Channel is full");
+				return ;
+			}
 			channels[target]->set(opt.first, opt.second, opt.third);
 		}
 	} while (!token.front().empty()) ;
-
-	std::cout << "\033[0m" << std::endl;
-
 	channels[target]->broadcast("MODE " + target + " :" + message, client_fd);
 }
 

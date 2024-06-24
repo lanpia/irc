@@ -6,7 +6,7 @@
 /*   By: nahyulee <nahyulee@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/06/08 19:50:01 by nahyulee          #+#    #+#             */
-/*   Updated: 2024/06/24 22:34:21 by nahyulee         ###   ########.fr       */
+/*   Updated: 2024/06/25 05:05:42 by nahyulee         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -136,7 +136,6 @@ Triple<std::string, std::string, std::string> Client::parseMessage() {
     return Triple<std::string, std::string, std::string>(command, target, message);
 }
 
-
 std::vector<std::string> Client::MODEcount(const std::string& message) {
     std::istringstream iss(message);
 	std::string buffer;
@@ -190,106 +189,11 @@ Triple<int, std::string, std::string> Client::MODEparse(const char mode, std::ve
 		case 'i': option = inviteOnly; tok = "true"; std::cout << "test i\n"; break;
 		default:
 			sendMessage("Unknown MODE");
-			// throw Client::ClientException("Unknown mode");
+			throw Client::ClientException("Unknown mode");
 	}
 
 	return (Triple<int, std::string, std::string>(option, std::string(1, mode), tok));
 }
-
-// Triple<int, std::string, std::string> Client::MODEparse(const std::string& message) {
-    // char sign;
-	// char mode;
-    // std::string parameter;
-    // iss >> sign;
-    // if (sign != '+' && sign != '-') {
-	// 	sendMessage("Invalid MODE format");
-    //     throw Client::ClientException("Invalid mode format");
-    // }
-    // iss >> mode;
-	
-    // if (!iss.eof()) {
-    //     iss >> parameter;
-    // }
-    // std::cout << "sign: " << sign << std::endl;
-    // std::cout << "mode: " << mode << std::endl;
-    // std::cout << "parameter: " << parameter << std::endl;
-	// enum e_info {operatorMode, topic, limits, passwd, inviteOnly};
-	// int option;
-    // switch (mode) {
-    //     case 'o':
-    //         option = operatorMode;
-    //         break;
-    //     case 't':
-    //         option = topic;
-    //         break;
-    //     case 'l':
-    //         option = limits;
-    //         break;
-    //     case 'k':
-    //         option = passwd;
-    //         break;
-    //     case 'i':
-    //         option = inviteOnly;
-	// 		parameter = "true";
-    //         break;
-    //     default:
-    //         sendMessage("Unknown MODE");
-	// 		throw Client::ClientException("Unknown mode");
-    // }
-	// if (sign == '-') {
-	// 	parameter = "";
-	// }
-    // return Triple<int, std::string, std::string>(option, std::string(1, sign), parameter);
-// }
-/* 
-PRIVMSG #t hihi
-PRIVMSG t0 hihi
-
-TOPIC #t hihi
-
-JOIN #t passwd
-JOIN #t0
-
-PART #t
-
-KICK #t t0
-
-INVITE #t t0
-MODE #t +l 50
-parsemessage 
-MODE
-#t
-+l 50-> modeparse
-+
-l-> idx
-50
-
-MODE #t +ki  pwd
-MODE #t +kl 50 pwd
-
-MODE #t +i/-i -	-> invite only
-MODE #t +o/-o nicknmae-> operator
-MODE #t +k/-k pwd	-> password
-MODE #t +l/-l num -> limit 최대유저수
-MODE #t +t/-t test	-> topic
-
-				  2  != 3
-				  50
-				  2  2
-MODE #t +iklt key 50 test
-MODE #t +ik key -lt
-
-MODE #t -ik -lt
-MODE #t -iklt							최대유저수 오퍼레이터
-<channel> {[+|-]|o|k|i|t|} [<limit>] [<user>] [<ban mask>]
-
-
-
-
-mode #채널이름 +/- ioklt 
-// 
-
- */
 
 // void Client::responseMessage(std::string code) const {
 // 	std::map<std::string, std::string> _responseCode;

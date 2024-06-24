@@ -6,7 +6,7 @@
 /*   By: nahyulee <nahyulee@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/06/08 19:10:06 by nahyulee          #+#    #+#             */
-/*   Updated: 2024/06/24 23:02:47 by nahyulee         ###   ########.fr       */
+/*   Updated: 2024/06/25 04:57:58 by nahyulee         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,6 +39,33 @@ bool Channel::isValidChatname(const std::string& name) const {
 	if (name == "#root" || name == "#admin")
         return false;
 	return true;
+}
+
+std::string Channel::checkDefaultInfo(int level) const {
+    if (is(Channel::chatname).empty()) {
+        return("You are not in the channels");
+    }
+    if (level >= 1) {
+        if (is(Channel::topic).empty()) {
+            return("Topic is not set");
+        }
+    }
+    if (level >= 2) {
+        if (is(Channel::limits).empty()) {
+			return("Limits is not set");
+		}
+	}
+	if (level >= 3) {
+		if (is(Channel::passwd).empty()) {
+			return("Password is not set");
+		}
+	}
+	if (level == 4) {
+		if (is(Channel::inviteOnly).empty()) {
+			return("InviteOnly is not set");
+		}
+	}
+	return "true";
 }
 
 std::string Channel::is(int idx) const {
@@ -81,21 +108,6 @@ Client* Channel::getFirstOperator() {
 void Channel::setFirstOperator(Client *op) {
 	this->firstOperator = op;
 }
-
-bool Channel::emptyClient() const {
-	if (this->clients.empty())
-		return true;
-	return false;
-}
-
-bool Channel::LastOperator() const {
-	for (std::set<Client*>::iterator it = this->clients.begin(); it != this->clients.end(); ++it) {
-		if ((*it)->is(Client::Operator) == "operator")
-			return false;
-	}
-	return true;
-}
-
 
 void Channel::ClientInOut(std::string inout, Client* client) throw(Channel::ChannelException) {
 	if (inout == "in" && this->clients.find(client) != this->clients.end()) {

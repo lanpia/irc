@@ -6,7 +6,7 @@
 /*   By: nahyulee <nahyulee@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/06/08 18:38:16 by nahyulee          #+#    #+#             */
-/*   Updated: 2024/06/21 00:54:39 by nahyulee         ###   ########.fr       */
+/*   Updated: 2024/06/25 05:12:52 by nahyulee         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -40,13 +40,12 @@ public:
     Channel(const std::string& name);
     ~Channel();
     bool isValidChatname(const std::string& name) const;
+    std::string checkDefaultInfo(int level) const;
     std::string is(int idx) const;
     void set(int idx, const std::string opt, const std::string& str);
 	std::set<Client*> getClients();
     Client* getFirstOperator();
     void setFirstOperator(Client *op);
-	bool emptyClient() const;
-	bool LastOperator() const;
     class ChannelException : public std::runtime_error {
     public:
         explicit ChannelException(const std::string& message) : std::runtime_error(message) {}
