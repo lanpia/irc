@@ -6,7 +6,7 @@
 /*   By: nahyulee <nahyulee@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/06/08 19:58:05 by nahyulee          #+#    #+#             */
-/*   Updated: 2024/06/18 09:00:05 by nahyulee         ###   ########.fr       */
+/*   Updated: 2024/06/24 23:09:17 by nahyulee         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -81,6 +81,7 @@ void Server::ServerRun() {
 		}
 	}
 }
+
 void Server::acceptNewClient() {
 	int new_socket = accept(svrFd, NULL, NULL);
 	if (new_socket < 0) {
@@ -123,14 +124,6 @@ void Server::handleClientMessage(int client_fd) {
 	}
 }
 
-	// } catch (const Client::ClientException& e) {
-    //     std::cerr << "Error: " << e.what() << " with response code: " << e.responseCode << std::endl;
-    // } catch (const Channel::ChannelException& e) {
-    //     std::cerr << "Error: " << e.what() << " with response code: " << e.responseCode << std::endl;
-    // } catch (const Server::ServerException& e) {
-    //     std::cerr << "Error: " << e.what() << " with response code: " << e.responseCode << std::endl;
-    // }
-
 int Server::findClientFd(const std::string& target) {
 	for (std::map<int, Client*>::iterator it = clients.begin(); it != clients.end(); ++it) {
 		if (it->second->is(Client::Nickname) == target) {
@@ -172,8 +165,7 @@ void Server::handleUser(int client_fd, const std::string& target, const std::str
 	if (clients[client_fd]->isValidNickname(target) == false) {
 		return;
 	}
-	clients[client_fd]->set(Client::Username, "+", target);
-	(void)message;
+	clients[client_fd]->set(Client::Username, "+", target + " " + message);
 }
 
 void Server::handleJoin(int client_fd, const std::string& target, const std::string& message) {
@@ -182,6 +174,7 @@ void Server::handleJoin(int client_fd, const std::string& target, const std::str
 	}
 	if (channels.find(target) == channels.end()) {
 		channels[target] = new Channel(target);
+		channels[target]->setFirstOperator(clients[client_fd]);
 		channels[target]->broadcast("Channel created: " + target, client_fd);
 		clients[client_fd]->set(Client::Operator, "+", "operator");
 	}
@@ -195,28 +188,31 @@ void Server::handleJoin(int client_fd, const std::string& target, const std::str
 		clients[client_fd]->sendMessage("JOIN fail");
 		return ;
 	}
+	if (channels[target]->is(Channel::passwd).empty() == false && channels[target]->is(Channel::passwd) != message) {
+		clients[client_fd]->sendMessage("JOIN fail, passwd error");
+		return ;
+	} else if (channels[target]->is(Channel::passwd).empty() == false && channels[target]->is(Channel::passwd) == message) {
+		clients[client_fd]->sendMessage("PASSWORD OK");
+	}
 	clients[client_fd]->set(Client::Chatname, "+", target);
 	channels[target]->ClientInOut("in", clients[client_fd]);
 }
 
 void Server::handlePart(int client_fd, const std::string& target, const std::string& message) {
-	if (channels.find(target) != channels.end()) {
+	if (channels.find(target) != channels.end() && clients[client_fd] != channels[target]->getFirstOperator()) {
 		channels[target]->ClientInOut("out", clients[client_fd]);
 		clients[client_fd]->set(Client::Operator, "-", "");
 		clients[client_fd]->set(Client::Chatname, "-", "");
+	} else if (channels.find(target) != channels.end() && clients[client_fd] == channels[target]->getFirstOperator()) {
+		channels[target]->broadcast("Channel deleted: " + target, client_fd);
+		for (std::set<Client*>::iterator it = channels[target]->getClients().begin(); it != channels[target]->getClients().end(); ++it) {
+			(*it)->set(Client::Chatname, "-", "");
+			(*it)->set(Client::Operator, "-", "");
+			channels[target]->ClientInOut("out", *it);
+		}
+		channels[target]->setFirstOperator(NULL);
+		delete channels[target];
 	}
-	// if (channels[target]->LastOperator() == true) {
-	// 	channels[target]->broadcast("Channel deleted: " + target, client_fd);
-	// 	for (std::set<Client*>::iterator it = channels[target]->getClients().begin(); it != channels[target]->getClients().end(); ++it) {
-	// 		(*it)->set(Client::Chatname, "-", "");
-	// 	}
-	// 	delete channels[target];
-	// 	channels.erase(target);
-	// }
-	// if (channels[target]->emptyClient() == true) {
-	// 	delete channels[target];
-	// 	channels.erase(target);
-	// }
 	(void)message;
 }
 
@@ -269,6 +265,16 @@ void Server::handleInvite(int client_fd, const std::string& target, const std::s
 		clients[client_fd]->sendMessage("You can't Invite yourself");
 		return;
 	} else {
+		if (channels[target]->is(Channel::passwd).empty() == false && channels[target]->is(Channel::passwd) != message) {
+			clients[client_fd]->sendMessage("Invite fail");
+			return ;
+		}
+		if (channels[target]->is(Channel::passwd).empty() == false && channels[target]->is(Channel::passwd) != message) {
+			clients[client_fd]->sendMessage("Invite fail, passwd error");
+			return ;
+		} else if (channels[target]->is(Channel::passwd).empty() == false && channels[target]->is(Channel::passwd) == message) {
+			clients[client_fd]->sendMessage("PASSWORD OK");
+		}
 		if (static_cast<long unsigned int>(std::strtod(channels[target]->is(Channel::limits).c_str(), NULL)) == clients.size() \
 			&& clients[target_fd]->is(Client::Chatname).empty()) {
 			clients[target_fd]->set(Client::Chatname, "+", target);
@@ -279,12 +285,16 @@ void Server::handleInvite(int client_fd, const std::string& target, const std::s
 }
 
 void Server::handleTopic(int client_fd, const std::string& target, const std::string& message) {
-	if (clients[client_fd]->checkDefaultInfo(2) == false) {
+	if (message.empty() == true) {
+		clients[client_fd]->sendMessage(clients[client_fd]->is(Client::Chatname) + " : " + channels[target]->is(Channel::topic));
 		return;
+	} else {
+		if (clients[client_fd]->checkDefaultInfo(2) == false) {
+			return;
+		}
+		channels[target]->set(Channel::topic, "+", message);
+		channels[target]->broadcast("TOPIC " + target + " :" + message, client_fd);
 	}
-	channels[target]->set(Channel::topic, "+", message);
-	clients[client_fd]->sendMessage("TOPIC " + target + " :" + message);
-	channels[target]->broadcast("TOPIC " + target + " :" + message, client_fd);
 }
 
 void Server::handleMode(int client_fd, const std::string& target, const std::string& message) {
@@ -294,12 +304,51 @@ void Server::handleMode(int client_fd, const std::string& target, const std::str
 		clients[client_fd]->sendMessage("Channelname Error");
 		return ;
 	}
-	Triple<int, std::string, std::string> opt = clients[client_fd]->MODEparse(message);
-	if (opt.first == 0) {
-		clients[findClientFd(opt.third)]->set(Client::Operator, opt.second, "operator");
-	} else {
-		channels[target]->set(opt.first, opt.second, opt.third);
+	
+	std::cout << "\033[0;32m";
+	std::cout << "target: " << target << std::endl;
+	std::cout << "message: " << message << std::endl;
+	
+	std::vector<std::string> token = clients[client_fd]->MODEcount(message);
+
+
+	char sign = *(token.front().begin());
+	if (sign != '+' && sign != '-') {
+		throw std::runtime_error("sign error");
 	}
+	token.front().erase(token.front().begin());
+
+	std::cout << "sign: " << sign << std::endl;
+
+	do {
+
+		
+		for (std::vector<std::string>::iterator it = token.begin(); it != token.end(); ++it) {
+			std::cout << "token: " << *it << std::endl;
+		}
+		std::cout << "token size " << token.size() << std::endl;
+	
+		char mode = *(token.front().end() - 1);
+		std::cout << "mode: " << mode << std::endl;
+		token.front().erase(token.front().end() - 1);
+		Triple<int, std::string, std::string> opt = clients[client_fd]->MODEparse(mode, &token);
+		opt.second = sign;
+		
+		std::cout << "opt.first: " << opt.first << " opt.second: " << opt.second <<  " opt.third: " << opt.third << std::endl;
+
+		if (opt.first == 0) {
+			if (findClientFd(opt.third) != channels[target]->getFirstOperator()->getFd()) {
+				clients[client_fd]->sendMessage("You are the first operator");
+				return ;
+			}
+			clients[findClientFd(opt.third)]->set(Client::Operator, opt.second, "operator");
+		} else {
+			channels[target]->set(opt.first, opt.second, opt.third);
+		}
+	} while (!token.front().empty()) ;
+
+	std::cout << "\033[0m" << std::endl;
+
 	channels[target]->broadcast("MODE " + target + " :" + message, client_fd);
 }
 

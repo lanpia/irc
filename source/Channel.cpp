@@ -6,7 +6,7 @@
 /*   By: nahyulee <nahyulee@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/06/08 19:10:06 by nahyulee          #+#    #+#             */
-/*   Updated: 2024/06/17 23:46:12 by nahyulee         ###   ########.fr       */
+/*   Updated: 2024/06/24 23:02:47 by nahyulee         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -46,14 +46,40 @@ std::string Channel::is(int idx) const {
 }
 
 void Channel::set(int idx, const std::string opt, const std::string& str) {
-	if (opt == "+")
+	std::string message;
+	switch (idx) {
+		case chatname:
+			message = "chatname";
+			break;
+		case topic:
+			message = "topic";
+			break;
+		case limits:
+			message = "limits";
+			break;
+		case passwd:
+			message = "passwd";
+			break;
+	}
+	if (opt == "+") {
 		this->ChatInfo[idx] = str;
-	else if (opt == "-")
+		broadcast("Channel " + this->is(Channel::chatname) + " " + message + " " + str +" has been updated");
+	} else if (opt == "-") {
 		this->ChatInfo[idx].clear();
+		broadcast("Channel " + this->is(Channel::chatname) + " " + message +" has been option removed");
+	}
 }
 
 std::set<Client*> Channel::getClients() {
 	return this->clients;
+}
+
+Client* Channel::getFirstOperator() {
+	return this->firstOperator;
+}
+
+void Channel::setFirstOperator(Client *op) {
+	this->firstOperator = op;
 }
 
 bool Channel::emptyClient() const {

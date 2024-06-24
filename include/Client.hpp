@@ -6,22 +6,25 @@
 /*   By: nahyulee <nahyulee@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/06/08 19:50:19 by nahyulee          #+#    #+#             */
-/*   Updated: 2024/06/18 08:57:34 by nahyulee         ###   ########.fr       */
+/*   Updated: 2024/06/24 21:30:46 by nahyulee         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef CLIENT_HPP
-#define CLIENT_HPP
+# define CLIENT_HPP 
 
-#include <set>
-#include <string>
-#include <map>
-#include <iostream>
-#include <sstream>
-#include <unistd.h>
-#include <fcntl.h>
-#include <sys/socket.h>
-#include <sys/types.h>
+# include <set>
+# include <string>
+# include <map>
+# include <vector>
+# include <iostream>
+# include <sstream>
+# include <cstdlib>
+# include <algorithm>
+# include <unistd.h>
+# include <fcntl.h>
+# include <sys/socket.h>
+# include <sys/types.h>
 
 template <typename T1, typename T2, typename T3>
 struct Triple {
@@ -56,9 +59,9 @@ public:
 	bool isValidNickname(const std::string& nickname) const;
 	bool checkDefaultInfo(int level) const;
 	void sendMessage(const std::string& message) const;
-	void responseMessage(std::string code) const;
 	Triple<std::string, std::string, std::string> parseMessage();
-	Triple<int, std::string, std::string> MODEparse(const std::string& message);
+	std::vector<std::string> MODEcount(const std::string& message);
+	Triple<int, std::string, std::string> MODEparse(const char mode, std::vector<std::string>* token);
 };
 
 #endif

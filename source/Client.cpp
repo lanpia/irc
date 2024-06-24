@@ -6,7 +6,7 @@
 /*   By: nahyulee <nahyulee@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/06/08 19:50:01 by nahyulee          #+#    #+#             */
-/*   Updated: 2024/06/18 00:17:51 by nahyulee         ###   ########.fr       */
+/*   Updated: 2024/06/24 22:34:21 by nahyulee         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -114,7 +114,6 @@ Triple<std::string, std::string, std::string> Client::parseMessage() {
 		sendMessage("Message too long");
 		throw Client::ClientException("Message too long");
 	}
-	std::cout << "buffer: " << buffer << std::endl;
 	if ((buffer.find("\r\n")) != std::string::npos) {
 		sendMessage("Message not complete");
 		throw Client::ClientException("Message not complete");
@@ -129,99 +128,119 @@ Triple<std::string, std::string, std::string> Client::parseMessage() {
     if (!message.empty() && message[0] == ' ') {
         message.erase(0, 1);
     }
+	
 	std::cout << "command: " << command << std::endl;
 	std::cout << "target: " << target << std::endl;
 	std::cout << "message: " << message << std::endl;
+	
     return Triple<std::string, std::string, std::string>(command, target, message);
 }
 
 
-Triple<int, std::string, std::string> Client::MODEparse(const std::string& message) {
+std::vector<std::string> Client::MODEcount(const std::string& message) {
     std::istringstream iss(message);
-    char sign;
-	char mode;
-    std::string parameter;
-    iss >> sign;
-    if (sign != '+' && sign != '-') {
-		sendMessage("Invalid MODE format");
-        throw Client::ClientException("Invalid mode format");
-    }
-    iss >> mode;
+	std::string buffer;
+	std::vector<std::string> token;
+	std::string modes = "oklti";
 	
-    if (!iss.eof()) {
-        iss >> parameter;
-    }
-    std::cout << "sign: " << sign << std::endl;
-    std::cout << "mode: " << mode << std::endl;
-    std::cout << "parameter: " << parameter << std::endl;
-	enum e_info {operatorMode, topic, limits, passwd, inviteOnly};
-	int option;
-    switch (mode) {
-        case 'o':
-            option = operatorMode;
-            break;
-        case 't':
-            option = topic;
-            break;
-        case 'l':
-            option = limits;
-            break;
-        case 'k':
-            option = passwd;
-            break;
-        case 'i':
-            option = inviteOnly;
-			parameter = "true";
-            break;
-        default:
-            sendMessage("Unknown MODE");
-			throw Client::ClientException("Unknown mode");
-    }
-	if (sign == '-') {
-		parameter = "";
+	while (iss >> buffer) {
+		token.push_back(buffer);
 	}
-    return Triple<int, std::string, std::string>(option, std::string(1, sign), parameter);
+	if (token.size() >= 2) {
+		for (long unsigned int i = 1; i < token.size(); i++) {
+			if (token[i][0] == '+' || token[i][0] == '-')
+				throw Client::ClientException("Invalid MODE format 1");
+		}
+	}
+	int first_token_len = 0;
+	for (long unsigned int j = 0; j < token[0].size(); j++) {
+		if (j == 0 && (token[0][j] == '+' || token[0][j] == '-'))
+			continue;
+		if (modes.find(token[0][j]) == std::string::npos)
+			throw Client::ClientException("Invalid MODE format 2");
+		if (std::count(token[0].begin(), token[0].end(), token[0][j]) > 1)  
+			throw Client::ClientException("Invalid MODE format dup");
+		first_token_len++;
+	}
+	if (first_token_len == 0)
+		throw Client::ClientException("Invalid MODE format 3");
+	return token;
 }
 
-void Client::responseMessage(std::string code) const {
-	std::map<std::string, std::string> _responseCode;
-	_responseCode["001"] = ":Welcome to the Internet Relay Network ";
-	_responseCode["002"] = ":Your host is ";
-	_responseCode["003"] = ":This server was created ";
-	_responseCode["253"] = ":unknown connection(s)";
-	_responseCode["332"] = " :No topic is set";
-	_responseCode["401"] = " :No such nick/channel";
-	_responseCode["402"] = " :No such server";
-	_responseCode["403"] = " :No such channel";
-	_responseCode["405"] = " :You have joined too many channels";
-	_responseCode["406"] = " :There was no such nickname";
-	_responseCode["409"] = " :No origin specified";
-	_responseCode["411"] = " :No recipient given";
-	_responseCode["421"] = " :Unknown command";
-	_responseCode["422"] = " :MOTD File is missing";
-	_responseCode["432"] = " :Erroneous nickname";
-	_responseCode["433"] = " :Nickname is already in use";
-	_responseCode["442"] = " :You're not on that channel";
-	_responseCode["443"] = " :is already on channel";
-	_responseCode["461"] = " :Not enough parameters";
-	_responseCode["464"] = " :Password incorrect";
+Triple<int, std::string, std::string> Client::MODEparse(const char mode, std::vector<std::string>* token) {
+	int option = 0;
+	std::string modes = "oklti";
+	std::string tok;
 	
-	_responseCode["472"] = " :is unknown mode char to me";
-	_responseCode["481"] = " :Permission Denied- You're not an IRC operator";
-	_responseCode["483"] = " :You cant kill a server";
-	_responseCode["501"] = " :Unknown MODE flag";
-	_responseCode["502"] = " :Cannot change mode for other users";
-	_responseCode["504"] = " :Cannot kill server";
-	_responseCode["511"] = " :Channel doesn't exist";
-	_responseCode["513"] = " :is already registered";
 	
-	std::map<std::string, std::string>::iterator it = _responseCode.find(code);
-	if (it == _responseCode.end()) {
-		sendMessage("\033[0;32mUnknown response code\033[0m");
+	switch (mode) {
+		enum e_info {operatorMode, topic, limits, passwd, inviteOnly};
+		case 'o': option = operatorMode; tok = token->back(); token->pop_back(); std::cout << "test o\n";break;
+		case 't': option = topic; tok = token->back(); token->pop_back(); std::cout << "test t\n";break;
+		case 'l':  option = limits; tok = token->back(); token->pop_back();
+			std::cout << "tok : " << tok << std::endl;
+			for (long unsigned int i = 0; i < tok.size(); i++) {
+				if (!std::isdigit(tok[i]))
+					throw Client::ClientException("Invalid MODE format 4");
+			}
+			std::cout << "test l\n";break;
+		case 'k': option = passwd; tok = token->back(); token->pop_back(); 
+			std::cout << "tok : " << tok << std::endl;
+			std::cout << "test k\n"; break;
+		case 'i': option = inviteOnly; tok = "true"; std::cout << "test i\n"; break;
+		default:
+			sendMessage("Unknown MODE");
+			// throw Client::ClientException("Unknown mode");
 	}
-	sendMessage("\033[0;32mft_irc server <" + code + ">" + _responseCode[code] + "\033[0m");
+
+	return (Triple<int, std::string, std::string>(option, std::string(1, mode), tok));
 }
 
+// Triple<int, std::string, std::string> Client::MODEparse(const std::string& message) {
+    // char sign;
+	// char mode;
+    // std::string parameter;
+    // iss >> sign;
+    // if (sign != '+' && sign != '-') {
+	// 	sendMessage("Invalid MODE format");
+    //     throw Client::ClientException("Invalid mode format");
+    // }
+    // iss >> mode;
+	
+    // if (!iss.eof()) {
+    //     iss >> parameter;
+    // }
+    // std::cout << "sign: " << sign << std::endl;
+    // std::cout << "mode: " << mode << std::endl;
+    // std::cout << "parameter: " << parameter << std::endl;
+	// enum e_info {operatorMode, topic, limits, passwd, inviteOnly};
+	// int option;
+    // switch (mode) {
+    //     case 'o':
+    //         option = operatorMode;
+    //         break;
+    //     case 't':
+    //         option = topic;
+    //         break;
+    //     case 'l':
+    //         option = limits;
+    //         break;
+    //     case 'k':
+    //         option = passwd;
+    //         break;
+    //     case 'i':
+    //         option = inviteOnly;
+	// 		parameter = "true";
+    //         break;
+    //     default:
+    //         sendMessage("Unknown MODE");
+	// 		throw Client::ClientException("Unknown mode");
+    // }
+	// if (sign == '-') {
+	// 	parameter = "";
+	// }
+    // return Triple<int, std::string, std::string>(option, std::string(1, sign), parameter);
+// }
 /* 
 PRIVMSG #t hihi
 PRIVMSG t0 hihi
@@ -236,20 +255,33 @@ PART #t
 KICK #t t0
 
 INVITE #t t0
+MODE #t +l 50
+parsemessage 
+MODE
+#t
++l 50-> modeparse
++
+l-> idx
+50
 
-MODE #t +i/-i 	-> invite only
-MODE #t +o/-o t0-> operator
-MODE #t +k/-k 	-> password
-MODE #t +l/-l 	-> limit 최대유저수
-MODE #t +t/-t 	-> topic
+MODE #t +ki  pwd
+MODE #t +kl 50 pwd
 
+MODE #t +i/-i -	-> invite only
+MODE #t +o/-o nicknmae-> operator
+MODE #t +k/-k pwd	-> password
+MODE #t +l/-l num -> limit 최대유저수
+MODE #t +t/-t test	-> topic
+
+				  2  != 3
+				  50
+				  2  2
 MODE #t +iklt key 50 test
-MODE #t +ik -lt key
+MODE #t +ik key -lt
 
 MODE #t -ik -lt
 MODE #t -iklt							최대유저수 오퍼레이터
-<channel> {[+|-]|o|p|s|i|t|n|b|v} [<limit>] [<user>]
-               [<ban mask>]
+<channel> {[+|-]|o|k|i|t|} [<limit>] [<user>] [<ban mask>]
 
 
 
@@ -258,3 +290,42 @@ mode #채널이름 +/- ioklt
 // 
 
  */
+
+// void Client::responseMessage(std::string code) const {
+// 	std::map<std::string, std::string> _responseCode;
+// 	_responseCode["001"] = ":Welcome to the Internet Relay Network ";
+// 	_responseCode["002"] = ":Your host is ";
+// 	_responseCode["003"] = ":This server was created ";
+// 	_responseCode["253"] = ":unknown connection(s)";
+// 	_responseCode["332"] = " :No topic is set";
+// 	_responseCode["401"] = " :No such nick/channel";
+// 	_responseCode["402"] = " :No such server";
+// 	_responseCode["403"] = " :No such channel";
+// 	_responseCode["405"] = " :You have joined too many channels";
+// 	_responseCode["406"] = " :There was no such nickname";
+// 	_responseCode["409"] = " :No origin specified";
+// 	_responseCode["411"] = " :No recipient given";
+// 	_responseCode["421"] = " :Unknown command";
+// 	_responseCode["422"] = " :MOTD File is missing";
+// 	_responseCode["432"] = " :Erroneous nickname";
+// 	_responseCode["433"] = " :Nickname is already in use";
+// 	_responseCode["442"] = " :You're not on that channel";
+// 	_responseCode["443"] = " :is already on channel";
+// 	_responseCode["461"] = " :Not enough parameters";
+// 	_responseCode["464"] = " :Password incorrect";
+	
+// 	_responseCode["472"] = " :is unknown mode char to me";
+// 	_responseCode["481"] = " :Permission Denied- You're not an IRC operator";
+// 	_responseCode["483"] = " :You cant kill a server";
+// 	_responseCode["501"] = " :Unknown MODE flag";
+// 	_responseCode["502"] = " :Cannot change mode for other users";
+// 	_responseCode["504"] = " :Cannot kill server";
+// 	_responseCode["511"] = " :Channel doesn't exist";
+// 	_responseCode["513"] = " :is already registered";
+	
+// 	std::map<std::string, std::string>::iterator it = _responseCode.find(code);
+// 	if (it == _responseCode.end()) {
+// 		sendMessage("\033[0;32mUnknown response code\033[0m");
+// 	}
+// 	sendMessage("\033[0;32mft_irc server <" + code + ">" + _responseCode[code] + "\033[0m");
+// }

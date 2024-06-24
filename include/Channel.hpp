@@ -6,7 +6,7 @@
 /*   By: nahyulee <nahyulee@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/06/08 18:38:16 by nahyulee          #+#    #+#             */
-/*   Updated: 2024/06/17 23:46:01 by nahyulee         ###   ########.fr       */
+/*   Updated: 2024/06/21 00:54:39 by nahyulee         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,6 +33,7 @@ private:
 
     std::string ChatInfo[5];
     std::set<Client*> clients;
+    Client* firstOperator;
 
 public:
     enum e_info { chatname, topic, limits, passwd, inviteOnly };
@@ -42,6 +43,8 @@ public:
     std::string is(int idx) const;
     void set(int idx, const std::string opt, const std::string& str);
 	std::set<Client*> getClients();
+    Client* getFirstOperator();
+    void setFirstOperator(Client *op);
 	bool emptyClient() const;
 	bool LastOperator() const;
     class ChannelException : public std::runtime_error {

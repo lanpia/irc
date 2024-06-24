@@ -6,7 +6,7 @@ import readline
 # 서버와 연결할 호스트와 포트 번호를 설정합니다.
 HOST = "127.0.0.1"
 PORT = 4000
-PASS = "mypasswd"
+PASS = "my"
 NICK = "t0"
 USER = "t0"
 CHANNEL = "#t"
