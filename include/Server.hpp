@@ -6,7 +6,7 @@
 /*   By: nahyulee <nahyulee@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/06/08 19:58:12 by nahyulee          #+#    #+#             */
-/*   Updated: 2024/06/25 05:37:26 by nahyulee         ###   ########.fr       */
+/*   Updated: 2024/06/25 13:46:02 by nahyulee         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -40,15 +40,15 @@ private:
 	std::map<int, Client*> clients;
 	std::map<std::string, Channel*> channels;
 	void acceptNewClient();
-
+	std::map<std::string, void (Server::*)(int, const std::string&, const std::string&)> _commands;
 public:
 	~Server();
 	Server(int port, const std::string& password);
-	// class ServerException : public std::runtime_error {
-    // public:
-    //     explicit ServerException(const std::string& message) : std::runtime_error(message) {}
-	// 	virtual ~ServerException() throw() {}
-    // };
+	class ServerException : public std::runtime_error {
+    public:
+        explicit ServerException(const std::string& message) : std::runtime_error(message) {}
+		virtual ~ServerException() throw() {}
+    };
 	void ServerRun();
 	void disconnectClient(int client_fd);
 	void handleClientMessage(int client_fd);

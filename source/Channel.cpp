@@ -6,7 +6,7 @@
 /*   By: nahyulee <nahyulee@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/06/08 19:10:06 by nahyulee          #+#    #+#             */
-/*   Updated: 2024/06/25 04:57:58 by nahyulee         ###   ########.fr       */
+/*   Updated: 2024/06/25 13:53:15 by nahyulee         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,45 +28,53 @@ Channel::Channel(const std::string& name) {
 }
 
 bool Channel::isValidChatname(const std::string& name) const {
-	if (name.size() == 0 || name.size() > 9)
+	if (name.size() == 0 || name.size() > 9) {
+		throw Channel::ChannelException("channel name is too long");
 		return false;
-	if (name[0] != '#')
-		return false;
-	for (size_t i = 1; i < name.size(); i++) {
-		if (!isalnum(name[i]))
-			return false;
 	}
-	if (name == "#root" || name == "#admin")
-        return false;
+	if (name[0] != '#') {
+		throw Channel::ChannelException("channel name have to start '#'");
+		return false;
+	}
+	for (size_t i = 1; i < name.size(); i++) {
+		if (!isalnum(name[i])) {
+			throw Channel::ChannelException("channel name is invalid");
+			return false;
+		}
+	}
+	if (name == "#root" || name == "#admin") {
+		throw Channel::ChannelException("channel name is invalid");
+		return false;
+	}
 	return true;
 }
 
-std::string Channel::checkDefaultInfo(int level) const {
-    if (is(Channel::chatname).empty()) {
-        return("You are not in the channels");
-    }
-    if (level >= 1) {
-        if (is(Channel::topic).empty()) {
-            return("Topic is not set");
-        }
-    }
-    if (level >= 2) {
-        if (is(Channel::limits).empty()) {
-			return("Limits is not set");
-		}
-	}
-	if (level >= 3) {
-		if (is(Channel::passwd).empty()) {
-			return("Password is not set");
-		}
-	}
-	if (level == 4) {
-		if (is(Channel::inviteOnly).empty()) {
-			return("InviteOnly is not set");
-		}
-	}
-	return "true";
-}
+// std::string Channel::checkDefaultInfo(int level) const {
+//     if (is(Channel::chatname).empty()) {
+//         return("You are not in the channels");
+//     }
+//     if (level >= 1) {
+//         if (is(Channel::topic).empty()) {
+//             return("Topic is not set");
+//         }
+//     }
+//     if (level >= 2) {
+//         if (is(Channel::limits).empty()) {
+// 			return("Limits is not set");
+// 		}
+// 	}
+// 	if (level >= 3) {
+// 		if (is(Channel::passwd).empty()) {
+// 			return("Password is not set");
+// 		}
+// 	}
+// 	if (level == 4) {
+// 		if (is(Channel::inviteOnly).empty()) {
+// 			return("InviteOnly is not set");
+// 		}
+// 	}
+// 	return "true";
+// }
 
 std::string Channel::is(int idx) const {
 	return this->ChatInfo[idx];

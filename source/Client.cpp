@@ -6,7 +6,7 @@
 /*   By: nahyulee <nahyulee@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/06/08 19:50:01 by nahyulee          #+#    #+#             */
-/*   Updated: 2024/06/25 05:05:42 by nahyulee         ###   ########.fr       */
+/*   Updated: 2024/06/25 14:44:33 by nahyulee         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,17 +25,17 @@ Client::~Client() {}
 
 bool Client::isValidNickname(const std::string& nickname) const {
 	if (nickname.size() == 0 || nickname.size() > 9) {
-		sendMessage("Invalid name");
+		throw Client::ClientException("Invalid name");
 		return false;
 	}
 	for (size_t i = 0; i < nickname.size(); i++) {
 		if (!isalnum(nickname[i])) {
-			sendMessage("Invalid name");
+			throw Client::ClientException("Invalid name");
 			return false;
 		}
 	}
 	if (nickname == "root" || nickname == "admin") {
-        sendMessage("Invalid name");
+        throw Client::ClientException("Invalid name");
 		return false;
 	}
 	return true;
@@ -79,18 +79,18 @@ void Client::set(int idx, const std::string opt, const std::string& str) {
 
 bool Client::checkDefaultInfo(int level) const {
     if (is(Client::Nickname).empty() || is(Client::Username).empty()) {
-        sendMessage("You have to set nickname and username");
+        throw Client::ClientException("You have to set nickname and username");
         return false;
     }
     if (level >= 1) {
         if (is(Client::Chatname).empty()) {
-            sendMessage("You are not in the channels");
+            throw Client::ClientException("You are not in the channels");
             return false;
         }
     }
     if (level == 2) {
         if (is(Client::Operator) != "operator") {
-			sendMessage("You are not operator");
+			throw Client::ClientException("You are not operator");
             return false;
         }
     }
@@ -128,11 +128,6 @@ Triple<std::string, std::string, std::string> Client::parseMessage() {
     if (!message.empty() && message[0] == ' ') {
         message.erase(0, 1);
     }
-	
-	std::cout << "command: " << command << std::endl;
-	std::cout << "target: " << target << std::endl;
-	std::cout << "message: " << message << std::endl;
-	
     return Triple<std::string, std::string, std::string>(command, target, message);
 }
 
@@ -170,25 +165,20 @@ Triple<int, std::string, std::string> Client::MODEparse(const char mode, std::ve
 	int option = 0;
 	std::string modes = "oklti";
 	std::string tok;
-	
-	
+
 	switch (mode) {
 		enum e_info {operatorMode, topic, limits, passwd, inviteOnly};
-		case 'o': option = operatorMode; tok = token->back(); token->pop_back(); std::cout << "test o\n";break;
-		case 't': option = topic; tok = token->back(); token->pop_back(); std::cout << "test t\n";break;
+		case 'o': option = operatorMode; tok = token->back(); token->pop_back(); break;
+		case 't': option = topic; tok = token->back(); token->pop_back(); break;
 		case 'l':  option = limits; tok = token->back(); token->pop_back();
-			std::cout << "tok : " << tok << std::endl;
 			for (long unsigned int i = 0; i < tok.size(); i++) {
 				if (!std::isdigit(tok[i]))
 					throw Client::ClientException("Invalid MODE format 4");
 			}
-			std::cout << "test l\n";break;
-		case 'k': option = passwd; tok = token->back(); token->pop_back(); 
-			std::cout << "tok : " << tok << std::endl;
-			std::cout << "test k\n"; break;
-		case 'i': option = inviteOnly; tok = "true"; std::cout << "test i\n"; break;
+			break;
+		case 'k': option = passwd; tok = token->back(); token->pop_back(); break;
+		case 'i': option = inviteOnly; tok = "true"; break;
 		default:
-			sendMessage("Unknown MODE");
 			throw Client::ClientException("Unknown mode");
 	}
 
