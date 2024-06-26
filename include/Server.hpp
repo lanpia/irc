@@ -6,7 +6,7 @@
 /*   By: nahyulee <nahyulee@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/06/08 19:58:12 by nahyulee          #+#    #+#             */
-/*   Updated: 2024/06/25 13:46:02 by nahyulee         ###   ########.fr       */
+/*   Updated: 2024/06/25 19:15:36 by nahyulee         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -53,6 +53,7 @@ public:
 	void disconnectClient(int client_fd);
 	void handleClientMessage(int client_fd);
 	int findClientFd(const std::string& target);
+	bool channelIsExist(bool errorthrow, const std::string& target);
 
 	void handlePass(int client_fd, const std::string& target, const std::string& message);
 	void handleNick(int client_fd, const std::string& target, const std::string& message);

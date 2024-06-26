@@ -6,7 +6,7 @@
 /*   By: nahyulee <nahyulee@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/06/08 19:50:19 by nahyulee          #+#    #+#             */
-/*   Updated: 2024/06/24 21:30:46 by nahyulee         ###   ########.fr       */
+/*   Updated: 2024/06/26 22:53:59 by nahyulee         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,6 +25,14 @@
 # include <fcntl.h>
 # include <sys/socket.h>
 # include <sys/types.h>
+
+#define ANSI_RED     "\x1b[31m"
+#define ANSI_GREEN   "\x1b[32m"
+#define ANSI_YELLOW  "\x1b[33m"
+#define ANSI_BLUE    "\x1b[34m"
+#define ANSI_MAGENTA "\x1b[35m"
+#define ANSI_CYAN    "\x1b[36m"
+#define ANSI_RESET   "\x1b[0m"
 
 template <typename T1, typename T2, typename T3>
 struct Triple {
@@ -59,9 +67,10 @@ public:
 	bool isValidNickname(const std::string& nickname) const;
 	bool checkDefaultInfo(int level) const;
 	void sendMessage(const std::string& message) const;
+	void sendMessage(const std::string& message, std::string color) const;
 	Triple<std::string, std::string, std::string> parseMessage();
 	std::vector<std::string> MODEcount(const std::string& message);
-	Triple<int, std::string, std::string> MODEparse(const char mode, std::vector<std::string>* token);
+	Triple<int, std::string, std::string> MODEparse(const char mode, std::vector<std::string>* token, const char sign);
 };
 
 #endif

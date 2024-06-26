@@ -6,7 +6,7 @@
 /*   By: nahyulee <nahyulee@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/06/08 19:50:01 by nahyulee          #+#    #+#             */
-/*   Updated: 2024/06/25 14:44:33 by nahyulee         ###   ########.fr       */
+/*   Updated: 2024/06/26 22:57:51 by nahyulee         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -68,12 +68,12 @@ void Client::set(int idx, const std::string opt, const std::string& str) {
 	if (opt == "+") {
 		this->ClientInfo[idx] = str;
 		if (message != "chatname")
-			sendMessage("clientinfomation of " + message + " is set for " + str);
+			sendMessage("clientinfomation of " + message + " is set for " + str, ANSI_CYAN);
 	}
 	else if (opt == "-") {
 		this->ClientInfo[idx].clear();
 		if (message != "chatname")
-			sendMessage("clientinfomation of "+ message + " is cleared");
+			sendMessage("clientinfomation of "+ message + " is cleared", ANSI_CYAN);
 	}
 }
 
@@ -99,6 +99,11 @@ bool Client::checkDefaultInfo(int level) const {
 
 void Client::sendMessage(const std::string& message) const {
     std::string messageWithNewline = message + "\r\n";
+    send(fd, messageWithNewline.c_str(), messageWithNewline.size(), 0);
+}
+
+void Client::sendMessage(const std::string& message, std::string color) const {
+    std::string messageWithNewline = color + message + "\r\n" + "\033[0m";
     send(fd, messageWithNewline.c_str(), messageWithNewline.size(), 0);
 }
 
@@ -136,7 +141,7 @@ std::vector<std::string> Client::MODEcount(const std::string& message) {
 	std::string buffer;
 	std::vector<std::string> token;
 	std::string modes = "oklti";
-	
+
 	while (iss >> buffer) {
 		token.push_back(buffer);
 	}
@@ -161,28 +166,40 @@ std::vector<std::string> Client::MODEcount(const std::string& message) {
 	return token;
 }
 
-Triple<int, std::string, std::string> Client::MODEparse(const char mode, std::vector<std::string>* token) {
+Triple<int, std::string, std::string> Client::MODEparse(const char mode, std::vector<std::string>* token, const char sign) {
 	int option = 0;
 	std::string modes = "oklti";
 	std::string tok;
 
-	switch (mode) {
-		enum e_info {operatorMode, topic, limits, passwd, inviteOnly};
-		case 'o': option = operatorMode; tok = token->back(); token->pop_back(); break;
-		case 't': option = topic; tok = token->back(); token->pop_back(); break;
-		case 'l':  option = limits; tok = token->back(); token->pop_back();
-			for (long unsigned int i = 0; i < tok.size(); i++) {
-				if (!std::isdigit(tok[i]))
-					throw Client::ClientException("Invalid MODE format 4");
-			}
-			break;
-		case 'k': option = passwd; tok = token->back(); token->pop_back(); break;
-		case 'i': option = inviteOnly; tok = "true"; break;
-		default:
-			throw Client::ClientException("Unknown mode");
+	if (sign == '+') {
+		switch (mode) {
+			enum e_info {operatorMode, topic, limits, passwd, inviteOnly};
+			case 'o': option = operatorMode; tok = token->back(); token->pop_back(); break;
+			case 't': option = topic; tok = token->back(); token->pop_back(); break;
+			case 'l':  option = limits; tok = token->back(); token->pop_back();
+				for (long unsigned int i = 0; i < tok.size(); i++) {
+					if (!std::isdigit(tok[i]))
+						throw Client::ClientException("Invalid MODE format 4");
+				}
+				break;
+			case 'k': option = passwd; tok = token->back(); token->pop_back(); break;
+			case 'i': option = inviteOnly; tok = "true"; break;
+			default:
+				throw Client::ClientException("Unknown mode");
+		}
+	} else if (sign == '-') {
+		switch (mode) {
+			enum e_info {operatorMode, topic, limits, passwd, inviteOnly};
+			case 'o': option = operatorMode; tok = token->back(); token->pop_back(); break;
+			case 't': option = topic; break;
+			case 'l':  option = limits; break;
+			case 'k': option = passwd; break;
+			case 'i': option = inviteOnly; break;
+			default:
+				throw Client::ClientException("Unknown mode");
+		}
 	}
-
-	return (Triple<int, std::string, std::string>(option, std::string(1, mode), tok));
+	return (Triple<int, std::string, std::string>(option, std::string(1, sign), tok));
 }
 
 // void Client::responseMessage(std::string code) const {

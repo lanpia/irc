@@ -6,7 +6,7 @@
 /*   By: nahyulee <nahyulee@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/06/08 19:10:06 by nahyulee          #+#    #+#             */
-/*   Updated: 2024/06/25 13:53:15 by nahyulee         ###   ########.fr       */
+/*   Updated: 2024/06/26 23:03:29 by nahyulee         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -49,33 +49,6 @@ bool Channel::isValidChatname(const std::string& name) const {
 	return true;
 }
 
-// std::string Channel::checkDefaultInfo(int level) const {
-//     if (is(Channel::chatname).empty()) {
-//         return("You are not in the channels");
-//     }
-//     if (level >= 1) {
-//         if (is(Channel::topic).empty()) {
-//             return("Topic is not set");
-//         }
-//     }
-//     if (level >= 2) {
-//         if (is(Channel::limits).empty()) {
-// 			return("Limits is not set");
-// 		}
-// 	}
-// 	if (level >= 3) {
-// 		if (is(Channel::passwd).empty()) {
-// 			return("Password is not set");
-// 		}
-// 	}
-// 	if (level == 4) {
-// 		if (is(Channel::inviteOnly).empty()) {
-// 			return("InviteOnly is not set");
-// 		}
-// 	}
-// 	return "true";
-// }
-
 std::string Channel::is(int idx) const {
 	return this->ChatInfo[idx];
 }
@@ -98,10 +71,10 @@ void Channel::set(int idx, const std::string opt, const std::string& str) {
 	}
 	if (opt == "+") {
 		this->ChatInfo[idx] = str;
-		broadcast("Channel " + this->is(Channel::chatname) + " " + message + " " + str +" has been updated");
+		broadcast("Channel " + this->is(Channel::chatname) + " " + message + " " + str +" has been updated", ANSI_BLUE);
 	} else if (opt == "-") {
 		this->ChatInfo[idx].clear();
-		broadcast("Channel " + this->is(Channel::chatname) + " " + message +" has been option removed");
+		broadcast("Channel " + this->is(Channel::chatname) + " " + message +" has been option removed", ANSI_BLUE);
 	}
 }
 
@@ -122,13 +95,13 @@ void Channel::ClientInOut(std::string inout, Client* client) throw(Channel::Chan
 		throw Channel::ChannelException("client already in the channel");
 	} else if (inout == "in") {
 		this->clients.insert(client);
-		broadcast(client->is(Client::Nickname) + " has joined the channel (" + this->is(Channel::chatname) + ")");
+		broadcast(client->is(Client::Nickname) + " has joined the channel (" + this->is(Channel::chatname) + ")", ANSI_BLUE);
 		return ;
 	}
 	if (inout == "out" && this->clients.find(client) == this->clients.end()) {
 		throw Channel::ChannelException("client not in the channel");
 	} else if (inout == "out") {
-		broadcast(client->is(Client::Nickname) + " has left the channel (" + this->is(Channel::chatname) + ")");
+		broadcast(client->is(Client::Nickname) + " has left the channel (" + this->is(Channel::chatname) + ")", ANSI_BLUE);
 		this->clients.erase(client);
 		return ;
 	}
@@ -146,6 +119,13 @@ void Channel::broadcast(const std::string& message, int except_fd) {
 void Channel::broadcast(const std::string& message) {
 	for (std::set<Client*>::iterator it = clients.begin(); it != clients.end(); ++it) {
 		std::string messageWithNewline = message + "\r\n";
+		send((*it)->getFd(), messageWithNewline.c_str(), messageWithNewline.size(), 0);
+	}
+}
+
+void Channel::broadcast(const std::string& message, std::string color) {
+	for (std::set<Client*>::iterator it = clients.begin(); it != clients.end(); ++it) {
+		std::string messageWithNewline = color + message + "\r\n" + "\033[0m";
 		send((*it)->getFd(), messageWithNewline.c_str(), messageWithNewline.size(), 0);
 	}
 }

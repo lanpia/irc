@@ -6,7 +6,7 @@
 /*   By: nahyulee <nahyulee@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/06/08 19:58:05 by nahyulee          #+#    #+#             */
-/*   Updated: 2024/06/25 14:37:04 by nahyulee         ###   ########.fr       */
+/*   Updated: 2024/06/26 23:05:37 by nahyulee         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -101,7 +101,7 @@ void Server::acceptNewClient() {
 	clients[new_socket] = new Client(new_socket);
 	std::cout << "New client connected: " << new_socket << std::endl;
 	if (password.length() > 0)
-		clients[new_socket]->sendMessage("Enter password");
+		clients[new_socket]->sendMessage("Enter password", ANSI_GREEN);
 }
 
 void Server::disconnectClient(int client_fd) {
@@ -121,7 +121,7 @@ void Server::handleClientMessage(int client_fd) {
 			throw Client::ClientException("Unknown command: " + msg.first + " " + msg.second + " " + msg.second);
 		}
 	} catch (std::exception& e) {
-		clients[client_fd]->sendMessage("\033[0;31m" + std::string(e.what()) + "\033[0m");
+		clients[client_fd]->sendMessage(e.what(), ANSI_MAGENTA);
 	}
 }
 
@@ -131,12 +131,22 @@ int Server::findClientFd(const std::string& target) {
 			return it->first;
 		}
 	}
-	return -1;
+	throw Client::ClientException("Client not found");
+}
+
+bool Server::channelIsExist(bool errorthrow, const std::string& target) {
+	if (channels.find(target) == channels.end()) {
+		if (errorthrow == true) {
+			throw Channel::ChannelException("Channel not found");
+		}
+		return false;
+	}
+	return true;
 }
 
 void Server::handlePass(int client_fd, const std::string& target, const std::string& message) {
 	if (target == password) {
-		clients[client_fd]->sendMessage("Authentication successful!\nNow you have to set the Nickname, Username");
+		clients[client_fd]->sendMessage("Authentication successful!\nNow you have to set the Nickname, Username", ANSI_GREEN);
 	} else {
 		throw Client::ClientException("Authentication failed!");
 	} 
@@ -165,7 +175,7 @@ void Server::handleUser(int client_fd, const std::string& target, const std::str
 
 void Server::handleJoin(int client_fd, const std::string& target, const std::string& message) {
 	clients[client_fd]->checkDefaultInfo(0);
-	if (channels.find(target) == channels.end()) {
+	if (channelIsExist(false, target) == false) {
 		channels[target] = new Channel(target);
 		channels[target]->setFirstOperator(clients[client_fd]);
 		channels[target]->broadcast("Channel created: " + target, client_fd);
@@ -179,14 +189,14 @@ void Server::handleJoin(int client_fd, const std::string& target, const std::str
 	if (channels[target]->is(Channel::passwd).empty() == false && channels[target]->is(Channel::passwd) != message) {
 		throw Client::ClientException("JOIN fail, passwd error");
 	} else if (channels[target]->is(Channel::passwd).empty() == false && channels[target]->is(Channel::passwd) == message) {
-		clients[client_fd]->sendMessage("PASSWORD OK");
+		clients[client_fd]->sendMessage("PASSWORD OK", ANSI_CYAN);
 	}
 	clients[client_fd]->set(Client::Chatname, "+", target);
 	channels[target]->ClientInOut("in", clients[client_fd]);
 }
 
 void Server::handlePart(int client_fd, const std::string& target, const std::string& message) {
-	if (channels.find(target) != channels.end() && clients[client_fd] != channels[target]->getFirstOperator()) {
+	if (channelIsExist(true, target) == true && clients[client_fd] != channels[target]->getFirstOperator()) {
 		channels[target]->ClientInOut("out", clients[client_fd]);
 		clients[client_fd]->set(Client::Operator, "-", "");
 		clients[client_fd]->set(Client::Chatname, "-", "");
@@ -208,9 +218,7 @@ void Server::handlePart(int client_fd, const std::string& target, const std::str
 void Server::handlePrivmsg(int client_fd, const std::string& target, const std::string& message) {
 	if (target[0] == '#') {
 		clients[client_fd]->checkDefaultInfo(1);
-		if (channels.find(target) == channels.end()) {
-			throw Channel::ChannelException("Channel not found");
-		}
+		channelIsExist(true, target);
 		channels[target]->broadcast("PRIVMSG " + target + " :" + clients[client_fd]->is(Client::Nickname) + ": " + message, client_fd);
 	} else {
 		for (std::map<int, Client*>::iterator it = clients.begin(); it != clients.end(); ++it) {
@@ -238,19 +246,18 @@ void Server::handleKick(int client_fd, const std::string& target, const std::str
 void Server::handleInvite(int client_fd, const std::string& target, const std::string& message) {
 	clients[client_fd]->checkDefaultInfo(2);
 	int target_fd = findClientFd(message);
-	if (target_fd == -1) {
-		throw Client::ClientException("Client not found");
-	} else if (client_fd == target_fd) {
+	if (client_fd == target_fd) {
 		throw Client::ClientException("You can't Invite yourself");
 	} else {
-		if (channels[target]->is(Channel::limits).empty() == false && (std::atoi(channels[target]->is(Channel::limits).c_str())) == static_cast<int>(clients.size()) \
+		if (channels[target]->is(Channel::limits).empty() == false \
+			&& (std::atoi(channels[target]->is(Channel::limits).c_str())) == static_cast<int>(clients.size()) \
 			&& clients[target_fd]->is(Client::Chatname).empty()) {
 			clients[target_fd]->set(Client::Chatname, "+", target);
-			clients[target_fd]->sendMessage("INVITE " + target + " " + message);
+			clients[target_fd]->sendMessage("INVITE " + target + " " + message, ANSI_CYAN);
 			channels[target]->ClientInOut("in", clients[target_fd]);
 		} else if (channels[target]->is(Channel::limits).empty() == true) {
 			clients[target_fd]->set(Client::Chatname, "+", target);
-			clients[target_fd]->sendMessage("INVITE " + target + " " + message);
+			clients[target_fd]->sendMessage("INVITE " + target + " " + message, ANSI_CYAN);
 			channels[target]->ClientInOut("in", clients[target_fd]);
 		} else {
 			throw Client::ClientException("Channel is full");
@@ -259,13 +266,12 @@ void Server::handleInvite(int client_fd, const std::string& target, const std::s
 }
 
 void Server::handleTopic(int client_fd, const std::string& target, const std::string& message) {
-	if (channels.find(target) == channels.end()) {
-		throw Channel::ChannelException("Channel not found");
-	} else	if (message.empty() == true) {
+	channelIsExist(true, target);
+	if (message.empty() == true) {
 		if (channels[target]->is(Channel::topic).empty() == true) {
 			throw Channel::ChannelException("No topic is set");
 		}
-		clients[client_fd]->sendMessage(clients[client_fd]->is(Client::Chatname) + " : " + channels[target]->is(Channel::topic));
+		clients[client_fd]->sendMessage(clients[client_fd]->is(Client::Chatname) + " : " + channels[target]->is(Channel::topic), ANSI_BLUE);
 	} else {
 		clients[client_fd]->checkDefaultInfo(2);
 		channels[target]->set(Channel::topic, "+", message);
@@ -274,6 +280,7 @@ void Server::handleTopic(int client_fd, const std::string& target, const std::st
 }
 
 void Server::handleMode(int client_fd, const std::string& target, const std::string& message) {
+	channelIsExist(true, target);
 	clients[client_fd]->checkDefaultInfo(2);
 	if (clients[client_fd]->is(Client::Chatname) != target) {
 		throw Channel::ChannelException("Channelname Error");
@@ -287,8 +294,7 @@ void Server::handleMode(int client_fd, const std::string& target, const std::str
 	do {
 		char mode = *(token.front().end() - 1);
 		token.front().erase(token.front().end() - 1);
-		Triple<int, std::string, std::string> opt = clients[client_fd]->MODEparse(mode, &token);
-		opt.second = sign;
+		Triple<int, std::string, std::string> opt = clients[client_fd]->MODEparse(mode, &token, sign);
 		if (opt.first == 0) {
 			if (findClientFd(opt.third) == channels[target]->getFirstOperator()->getFd()) {
 				throw Client::ClientException("You are the first operator");
@@ -307,6 +313,19 @@ void Server::handleMode(int client_fd, const std::string& target, const std::str
 void Server::handleQuit(int client_fd, const std::string& target, const std::string& message) {
 	(void)target;
 	(void)message;
-	clients[client_fd]->sendMessage("QUIT the server");
+	if (clients[client_fd]->is(Client::Chatname).empty() == false) {
+		std::string chatname = clients[client_fd]->is(Client::Chatname);
+		channels[chatname]->broadcast("Channel deleted: " + chatname);
+		std::set<Client*> client = channels[chatname]->getClients();
+		for (std::set<Client*>::iterator it = client.begin(); it != client.end(); ++it) {
+			(*it)->set(Client::Chatname, "-", "");
+			(*it)->set(Client::Operator, "-", "");
+			channels[chatname]->ClientInOut("out", *it);
+		}
+		channels[chatname]->setFirstOperator(NULL);
+		delete channels[chatname];
+		channels.erase(chatname);
+	}
+	clients[client_fd]->sendMessage("QUIT the server", ANSI_BLUE);
 	disconnectClient(client_fd);
 }
